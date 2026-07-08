@@ -4,7 +4,7 @@ An infinite-zoom explorable. Zoom **in** from a human holding a wallet down to t
 
 Honest in both directions — never doom, never cope.
 
-**Play it:** https://sene1337.github.io/the-construct/
+**Play it:** https://sene1337.github.io/quantum-construct/
 
 Scroll / pinch to travel the axis · drag to look around · pick a wallet from the rack · run the attack.
 
