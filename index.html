@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>THE CONSTRUCT — Bitcoin vs. The Quantum Machine</title>
+<style>
+  :root{ --g:#00ff41; --gd:#0a9a30; --k:#0b0b0b; }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ width:100%; height:100%; overflow:hidden; background:#ffffff;
+    font-family:"SF Mono", ui-monospace, Menlo, Consolas, "Courier New", monospace; }
+  canvas#c{ position:fixed; inset:0; display:block; touch-action:none; }
+  #hud{ position:fixed; inset:0; pointer-events:none; z-index:10; color:var(--k); }
+  #brand{ position:absolute; top:18px; left:20px; }
+  #brand .t1{ font-weight:700; font-size:15px; letter-spacing:2px; }
+  #brand .t2{ font-size:10px; letter-spacing:1px; color:#555; margin-top:2px; }
+  #lvl{ position:absolute; top:64px; left:20px; max-width:340px; }
+  #lvlname{ font-size:12px; font-weight:700; letter-spacing:1px; color:var(--k);
+    border-left:3px solid var(--g); padding-left:8px; }
+  #lvldesc{ font-size:10px; color:#3f7a4f; margin-top:4px; padding-left:11px; line-height:1.5; }
+  #chip{ position:absolute; top:18px; right:20px; text-align:right; pointer-events:auto; }
+  #chip .lab{ font-size:9px; letter-spacing:1px; color:#555; margin-bottom:4px; }
+  .wbtn{ display:block; margin:3px 0 3px auto; padding:4px 8px; font:inherit; font-size:10px;
+    letter-spacing:.5px; background:rgba(255,255,255,.85); border:1px solid #bbb; color:#333;
+    cursor:pointer; min-width:180px; text-align:left; }
+  .wbtn .st{ float:right; font-weight:700; margin-left:14px; }
+  .wbtn.sel{ border-color:var(--g); color:#064016; box-shadow:0 0 0 1px var(--g), 0 0 14px rgba(0,255,65,.35); }
+  .wbtn.sel .st.ex{ color:#b98300; } .wbtn.sel .st.hd{ color:#0a9a30; }
+  #meter{ position:absolute; right:20px; top:50%; transform:translateY(-50%); pointer-events:auto; }
+  #meter .row{ display:flex; align-items:center; justify-content:flex-end; height:16px; cursor:pointer; }
+  #meter .row span{ font-size:8.5px; color:#888; margin-right:6px; letter-spacing:.5px;
+    opacity:0; transition:opacity .15s; }
+  #meter .row:hover span, #meter .row.cur span{ opacity:1; color:#0a5a22; }
+  #meter .row i{ width:7px; height:7px; border:1px solid #999; border-radius:50%; display:block; }
+  #meter .row.cur i{ background:var(--g); border-color:var(--g); box-shadow:0 0 8px var(--g); }
+  #meter .rail{ position:absolute; right:3px; top:8px; bottom:8px; width:1px; background:#ccc; z-index:-1; }
+  #hint{ position:absolute; bottom:16px; left:50%; transform:translateX(-50%); font-size:10px;
+    letter-spacing:1.5px; color:#666; text-align:center; }
+  #hint b{ color:#0a9a30; }
+  #atk{ position:absolute; bottom:64px; left:50%; transform:translateX(-50%); text-align:center;
+    display:none; pointer-events:auto; }
+  #atkstat{ font-size:10px; letter-spacing:1px; margin-bottom:8px; color:#333; background:rgba(255,255,255,.8); padding:2px 6px;}
+  #atkbtn{ font:inherit; font-size:13px; font-weight:700; letter-spacing:2px; padding:12px 26px;
+    background:#0b0b0b; color:var(--g); border:1px solid var(--g); cursor:pointer;
+    box-shadow:0 0 18px rgba(0,255,65,.3); }
+  #atkbtn:hover{ background:#102015; }
+  #atkbtn:disabled{ opacity:.45; cursor:default; }
+  #toast{ position:absolute; bottom:130px; left:50%; transform:translateX(-50%) translateY(8px);
+    max-width:min(620px, 92vw); background:rgba(8,12,9,.94); color:#d7ffe2; font-size:11.5px;
+    line-height:1.65; padding:14px 18px; border-left:3px solid var(--g); opacity:0;
+    transition:opacity .4s, transform .4s; letter-spacing:.3px; }
+  #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  #toast b{ color:var(--g); }
+  #intro{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; background:rgba(255,255,255,.92); transition:opacity 1s; z-index:20; }
+  #intro.gone{ opacity:0; pointer-events:none; }
+  #intro .a{ font-size:clamp(18px,4vw,34px); font-weight:700; letter-spacing:6px; color:var(--k); }
+  #intro .b{ font-size:clamp(10px,2vw,13px); letter-spacing:3px; color:#0a9a30; margin-top:10px; }
+  #intro .cta{ font-size:11px; letter-spacing:2px; color:#666; margin-top:38px; line-height:2; text-align:center;}
+  #intro .cta b{ color:#0b0b0b; }
+  #snd{ position:absolute; bottom:14px; right:20px; font:inherit; font-size:10px;
+    letter-spacing:1px; padding:5px 10px; background:rgba(255,255,255,.85); border:1px solid #bbb;
+    color:#333; cursor:pointer; pointer-events:auto; }
+  #snd:hover{ border-color:var(--g); color:#064016; }
+  #err{ position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+    background:#fff; color:#333; font-size:13px; z-index:99; padding:30px; text-align:center; }
+  @media (max-width:700px){
+    #brand .t1{ font-size:12px; } #brand .t2{ display:none; }
+    #brand{ max-width:150px; } #lvl{ top:44px; max-width:200px; }
+    #meter .row span{ display:none; }
+    .wbtn{ min-width:130px; font-size:9px; } #hint{ font-size:8.5px; width:92vw; }
+  }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div id="brand"><div class="t1">THE CONSTRUCT</div><div class="t2">BITCOIN vs THE QUANTUM MACHINE</div></div>
+  <div id="lvl"><div id="lvlname"></div><div id="lvldesc"></div></div>
+  <div id="chip"><div class="lab">WALLET SELECT — LOADED PROGRAM</div></div>
+  <div id="meter"><div class="rail"></div></div>
+  <div id="atk"><div id="atkstat"></div><button id="atkbtn">RUN THE ATTACK</button></div>
+  <div id="toast"></div>
+  <div id="hint"><b>SCROLL / PINCH</b> — ZOOM AXIS &nbsp;·&nbsp; <b>DRAG</b> — LOOK AROUND &nbsp;·&nbsp; IN: THE MATH &nbsp;·&nbsp; OUT: THE MACHINE</div>
+  <button id="snd">SND: ON</button>
+  <div id="intro">
+    <div class="a">THE CONSTRUCT</div>
+    <div class="b">BITCOIN vs THE QUANTUM MACHINE</div>
+    <div class="cta"><b>SCROLL DOWN</b> — descend into the math that locks a bitcoin<br>
+      <b>SCROLL UP</b> — assemble the machine required to break it<br>
+      <b>DRAG</b> — look around any level<br>
+      <span style="color:#0a9a30">honest in both directions · never doom · never cope</span></div>
+  </div>
+</div>
+<div id="err">WebGL could not start. This piece needs a browser with WebGL2 and network access to cdn.jsdelivr.net (for three.js).</div>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ============================ CORE CONSTANTS ============================ */
+const BASE = 16, B2 = BASE*BASE;
+const GREEN = 0x00ff41, GREEN2 = 0x0aa832, GREEND = 0x0a7a28, INK = 0x111111, AMBER = 0xcf9000;
+const WIRE = 0x0e9c38, SOLID = 0x17b04a;   // phosphor reads on white only when inked down
+const wireCol=c=>c===GREEN?WIRE:c;
+const ZMIN = 0.02, ZMAX = 11.72;
+let Z = 3.45, targetZ = 4.02;                 // start: gliding into L1
+const V = (x=0,y=0,z=0)=>new THREE.Vector3(x,y,z);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ease=(t)=>t*t*(3-2*t);
+let seed=1337; const rand=()=>{ seed|=0; seed=seed+0x6D2B79F5|0; let t=Math.imul(seed^seed>>>15,1|seed);
+  t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
+
+/* ============================ RENDERER ============================ */
+let renderer;
+try{
+  renderer = new THREE.WebGLRenderer({canvas:document.getElementById('c'), antialias:true, logarithmicDepthBuffer:true});
+}catch(e){ document.getElementById('err').style.display='flex'; throw e; }
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xffffff);
+scene.fog = new THREE.Fog(0xffffff, 26, 215);
+const camera = new THREE.PerspectiveCamera(55, 1, 0.02, 900);
+scene.add(new THREE.HemisphereLight(0xffffff, 0xcfd6cf, 1.25));
+const sun = new THREE.DirectionalLight(0xffffff, 2.0); sun.position.set(6,12,8); scene.add(sun);
+
+/* ============================ HELPERS ============================ */
+const FONT = '"SF Mono", Menlo, Consolas, "Courier New", monospace';
+
+function makeLabel(text, o={}){
+  const {size=.3, color=null, ink=false, bg=null, align='center', billboard=false,
+         opacity=1, glow=true, weight=700, lh=1.34} = o;
+  const plate = bg ? (ink?'rgba(255,255,255,.93)':'rgba(7,13,9,.92)') : null;
+  const col = ink ? '#111111' : (color || (bg ? '#3dff7d' : '#0d8f31'));
+  const lines = String(text).split('\n');
+  const fpx=46, pad=20;
+  const m0=document.createElement('canvas').getContext('2d');
+  m0.font=`${weight} ${fpx}px ${FONT}`;
+  let w=8; for(const L of lines) w=Math.max(w, m0.measureText(L).width);
+  const cv=document.createElement('canvas');
+  cv.width=Math.ceil(w+pad*2); cv.height=Math.ceil(lines.length*fpx*lh+pad*2);
+  const cx=cv.getContext('2d');
+  if(plate){ cx.fillStyle=plate; cx.fillRect(0,0,cv.width,cv.height);
+          cx.strokeStyle= ink?'rgba(17,17,17,.7)':'rgba(0,255,65,.45)';
+          cx.strokeRect(1,1,cv.width-2,cv.height-2); }
+  cx.font=`${weight} ${fpx}px ${FONT}`; cx.textBaseline='top'; cx.textAlign=align;
+  const tx = align==='center'?cv.width/2 : align==='left'?pad : cv.width-pad;
+  if(!plate){                      // white knockout halo so text reads over geometry
+    cx.lineJoin='round'; cx.lineWidth=9; cx.strokeStyle='rgba(255,255,255,.9)';
+    lines.forEach((L,i)=>cx.strokeText(L, tx, pad+i*fpx*lh));
+  }
+  if(glow && !ink){ cx.shadowColor='rgba(0,255,65,.5)'; cx.shadowBlur=6; }
+  cx.fillStyle=col;
+  lines.forEach((L,i)=>cx.fillText(L, tx, pad+i*fpx*lh));
+  const tex=new THREE.CanvasTexture(cv); tex.colorSpace=THREE.SRGBColorSpace; tex.anisotropy=8;
+  const hW=size*lines.length*lh + size*.6, wW=hW*cv.width/cv.height;
+  if(billboard){
+    const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,opacity,depthWrite:false}));
+    s.scale.set(wW,hW,1); s.renderOrder=3; return s;
+  }
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(wW,hW),
+    new THREE.MeshBasicMaterial({map:tex,transparent:true,opacity,side:THREE.DoubleSide,depthWrite:false}));
+  mesh.renderOrder=2; return mesh;
+}
+function mkLine(pts,color=GREEN,op=1,dashed=false){
+  const g=new THREE.BufferGeometry().setFromPoints(pts.map(p=>Array.isArray(p)?V(...p):p));
+  const c=wireCol(color);
+  const m=dashed? new THREE.LineDashedMaterial({color:c,transparent:true,opacity:op,dashSize:.24,gapSize:.3})
+                : new THREE.LineBasicMaterial({color:c,transparent:true,opacity:op});
+  const l=new THREE.Line(g,m); if(dashed) l.computeLineDistances(); return l;
+}
+function mkSegs(pts,color=GREEN,op=.5){
+  const g=new THREE.BufferGeometry().setFromPoints(pts);
+  return new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:wireCol(color),transparent:true,opacity:op}));
+}
+function wireBox(w,h,d,color=GREEN,op=.8){
+  return new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(w,h,d)),
+    new THREE.LineBasicMaterial({color:wireCol(color),transparent:true,opacity:op}));
+}
+function solidBox(w,h,d,color=GREEN,op=.1){
+  return new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
+    new THREE.MeshBasicMaterial({color:color===GREEN?SOLID:color,transparent:true,opacity:op,depthWrite:false}));
+}
+function ringLine(r,color=GREEN,op=.9,segs=72){
+  const pts=[]; for(let i=0;i<=segs;i++){const a=i/segs*Math.PI*2; pts.push(V(Math.cos(a)*r,Math.sin(a)*r,0));}
+  return mkLine(pts,color,op);
+}
+function glowSprite(size=1,color='#00ff41',op=.85){
+  const cv=document.createElement('canvas'); cv.width=cv.height=128;
+  const cx=cv.getContext('2d');
+  const g=cx.createRadialGradient(64,64,2,64,64,62);
+  g.addColorStop(0,color); g.addColorStop(.35,color+'88'); g.addColorStop(1,'rgba(0,255,65,0)');
+  cx.fillStyle=g; cx.fillRect(0,0,128,128);
+  const tex=new THREE.CanvasTexture(cv); tex.colorSpace=THREE.SRGBColorSpace;
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,opacity:op,depthWrite:false}));
+  s.scale.setScalar(size); return s;
+}
+let _dotTex=null;
+function dotTex(){
+  if(_dotTex) return _dotTex;
+  const cv=document.createElement('canvas'); cv.width=cv.height=64;
+  const cx=cv.getContext('2d');
+  const g=cx.createRadialGradient(32,32,2,32,32,30);
+  g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(.5,'rgba(255,255,255,.85)'); g.addColorStop(1,'rgba(255,255,255,0)');
+  cx.fillStyle=g; cx.fillRect(0,0,64,64);
+  _dotTex=new THREE.CanvasTexture(cv); return _dotTex;
+}
+function mkPoints(positions,color=GREEN,size=.07,op=.7){
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  return new THREE.Points(g,new THREE.PointsMaterial({color:color===GREEN?0x0dbf45:color,size,
+    transparent:true,opacity:op,map:dotTex(),depthWrite:false}));
+}
+let _mc=null;
+function matcapTex(){
+  if(_mc) return _mc;
+  const cv=document.createElement('canvas'); cv.width=cv.height=256;
+  const cx=cv.getContext('2d');
+  const g=cx.createRadialGradient(88,78,8,128,128,152);
+  g.addColorStop(0,'#ffffff'); g.addColorStop(.25,'#d6ecd9'); g.addColorStop(.55,'#84b18e');
+  g.addColorStop(.85,'#33553e'); g.addColorStop(1,'#152619');
+  cx.fillStyle=g; cx.fillRect(0,0,256,256);
+  _mc=new THREE.CanvasTexture(cv); _mc.colorSpace=THREE.SRGBColorSpace; return _mc;
+}
+function matMat(color=0xffffff,opacity=1){
+  return new THREE.MeshMatcapMaterial({matcap:matcapTex(),color,transparent:true,opacity});
+}
+function shadowDisc(r=1.5,op=.18){
+  const cv=document.createElement('canvas'); cv.width=cv.height=128;
+  const cx=cv.getContext('2d');
+  const g0=cx.createRadialGradient(64,64,4,64,64,62);
+  g0.addColorStop(0,`rgba(10,30,16,${op})`); g0.addColorStop(1,'rgba(10,30,16,0)');
+  cx.fillStyle=g0; cx.fillRect(0,0,128,128);
+  const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace;
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(r*2,r*2),
+    new THREE.MeshBasicMaterial({map:t,transparent:true,depthWrite:false}));
+  m.rotation.x=-Math.PI/2; m.position.y=.012; return m;
+}
+function panel(w,h,drawFn,pxW=900){
+  const cv=document.createElement('canvas'); cv.width=pxW; cv.height=Math.round(pxW*h/w);
+  const cx=cv.getContext('2d');
+  const tex=new THREE.CanvasTexture(cv); tex.colorSpace=THREE.SRGBColorSpace; tex.anisotropy=8;
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),
+    new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide,depthWrite:false}));
+  mesh.userData.redraw=()=>{ cx.clearRect(0,0,cv.width,cv.height); drawFn(cx,cv.width,cv.height); tex.needsUpdate=true; };
+  mesh.userData.redraw(); mesh.renderOrder=1; mesh.userData.isPanel=true;
+  return mesh;
+}
+function gridPatch(w,d,step,color=GREEN,op=.14){
+  const pts=[];
+  for(let x=-w/2;x<=w/2+.01;x+=step){ pts.push(V(x,0,-d/2),V(x,0,d/2)); }
+  for(let z=-d/2;z<=d/2+.01;z+=step){ pts.push(V(-w/2,0,z),V(w/2,0,z)); }
+  return mkSegs(pts,color,op);
+}
+
+/* ============================ WALLETS ============================ */
+const WALLETS=[
+ { key:'SATOSHI', btn:'1 · SATOSHI 2009', name:'SATOSHI · 2009 COINBASE REWARD',
+   btc:'50.000 000 00', type:'P2PK — raw public key on-chain', addr:'pubkey 04a34b…9c1e (no address wrapper)',
+   exposed:true, movable:false,
+   tag:'~1.1M BTC like this · keys lost forever\nowners can never migrate them to safety',
+   exline:'EXPOSED since 2009-01-09',
+   txs:['2009-01-09  +50.00000000  coinbase (block 9)'] },
+ { key:'MODERN', btn:'2 · YOUR MODERN WALLET', name:'YOUR MODERN WALLET',
+   btc:'6.150 000 00', type:'P2WPKH — native SegWit, never reused', addr:'bc1q 7v3k …x2e4',
+   exposed:false, movable:true,
+   tag:'SAFE — until the day you spend it',
+   exline:'HIDDEN — key behind a hash wall',
+   txs:['2025-11-02  +4.30000000  received','2024-06-14  +1.85000000  received'] },
+ { key:'REUSED', btn:'3 · A REUSED ADDRESS', name:'A REUSED ADDRESS',
+   btc:'0.133 700 00', type:'P2PKH — address already spent once', addr:'1F3x k9qL …mQ2p',
+   exposed:true, movable:true,
+   tag:'AT RISK — but movable: migrate to a fresh\naddress and it re-hides',
+   exline:'EXPOSED since first spend (2023-03-12)',
+   txs:['2023-03-12  −0.50000000  sent (KEY REVEALED)','2022-12-01  +0.63370000  received'] },
+];
+let curW = 1;
+
+/* ============================ LEVEL ENGINE ============================ */
+const levels=[];
+function defLevel(def){
+  const L={...def, idx:levels.length, group:new THREE.Group(), mats:[], pmats:[], anim:[],
+           lastOp:-1, curScale:1, snapped:false};
+  L.camStart=V(...def.camStart); L.portal=V(...def.portal); L.center=V(...(def.center||[0,.6,0]));
+  levels.push(L); scene.add(L.group); L.group.visible=false;
+}
+function finishLevel(L){
+  L.group.traverse(o=>{
+    const ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[];
+    for(const m of ms){
+      if(m.userData.reg) continue; m.userData.reg=true;
+      m.transparent=true; m.userData.op0=m.opacity;
+      if(o.isPoints){ m.userData.size0=m.size; L.pmats.push(m); }
+      if(!m.userData.noFade) L.mats.push(m);
+    }
+  });
+  L.panelMats=[];   // big bright surfaces — these dissolve first when the level is passed
+  L.group.traverse(o=>{ if(o.userData.isPanel&&o.material) L.panelMats.push(o.material); });
+  for(const c of L.group.children){
+    if(c.userData.noAnim) continue;
+    const dir=V(rand()*2-1,(rand()*2-1)*.7,rand()*2-1).normalize();
+    L.anim.push({o:c,p0:c.position.clone(),s0:c.scale.clone(),
+                 off:dir.multiplyScalar(7+rand()*10), d:rand()*.55});
+  }
+}
+function applyAssembly(L,p){
+  if(p>=1){
+    if(!L.snapped){ for(const a of L.anim){ a.o.position.copy(a.p0); a.o.scale.copy(a.s0);
+      a.o.visible=a.o.userData.vis!==false; } L.snapped=true; }
+    return;
+  }
+  L.snapped=false;
+  for(const a of L.anim){
+    const t=clamp((p*1.5-a.d)/.5,0,1), e=1-Math.pow(1-t,3);
+    a.o.visible=(a.o.userData.vis!==false)&&t>0.005;
+    a.o.position.copy(a.p0).addScaledVector(a.off,1-e);
+    a.o.scale.copy(a.s0).multiplyScalar(.55+.45*e);
+  }
+}
+function setLevelOpacity(L,op){
+  if(Math.abs(op-L.lastOp)<.004) return;
+  L.lastOp=op;
+  for(const m of L.mats) m.opacity=m.userData.op0*op;
+}
+
+/* ============================ SHARED BUILD BITS ============================ */
+function trackLine(L, extraPts=[]){
+  // the phosphor thread: from behind the entry, through the scene, out through the portal
+  const A=L.camStart.clone(), P=L.portal.clone();
+  const behind=A.clone().sub(P).normalize();
+  const pts=[A.clone().addScaledVector(behind,26), A.clone().addScaledVector(behind,6),
+             ...extraPts.map(p=>V(...p)), P.clone(),
+             P.clone().addScaledVector(behind,-.35)];
+  const l=mkLine(pts,GREEN,.8,true); l.userData.noAnim=true; l.userData.isTrack=true;
+  L.group.add(l);
+  const halo=ringLine(.5,GREEN,.5); halo.position.copy(P); halo.userData.noAnim=true;
+  L.group.add(halo); L.portalHalo=halo;
+}
+function portalSign(L,text,offset=[0,.9,0]){
+  const s=makeLabel('▼ '+text,{size:.14,billboard:true,opacity:.95});
+  s.position.copy(L.portal).add(V(...offset)); s.userData.noAnim=true; L.group.add(s);
+}
+
+/* ############################################################################
+   idx 0 — O4 · THE GAP (outermost)
+############################################################################ */
+defLevel({
+  short:'O4', name:'THE GAP — TIMELINE & ODDS',
+  desc:'today’s hardware vs the machine · what the experts actually say',
+  camStart:[-16,9,20], portal:[2.2,.6,-1.0], center:[0,.8,0],
+  build(L){
+    const g=L.group;
+    // timeline rail
+    const rail=new THREE.Group();
+    rail.add(mkLine([[-11,0,0],[11,0,0]],GREEN,.9));
+    for(let yr=2025; yr<=2045; yr++){
+      const x=-11+(yr-2025)/20*22;
+      rail.add(mkLine([[x,-.18,0],[x,.18,0]],GREEN,yr%5?0.35:0.9));
+      if(yr%5===0){ const t=makeLabel(String(yr),{size:.22,ink:true,weight:400}); t.position.set(x,-.62,0); rail.add(t); }
+    }
+    // expert window band 2033.5–2041 (10–15 yr from 2026 survey window)
+    const band=solidBox(22*(7.5/20),1.1,.02,GREEN,.10); band.position.set(-11+(2033.5-2025+3.75)/20*22,0,-.02); rail.add(band);
+    const bandL=makeLabel('EXPERT WINDOW\n~10–15 yrs out',{size:.2}); bandL.position.set(-11+(2037.2-2025)/20*22,1.25,0); rail.add(bandL);
+    const m1=makeLabel('2024 — NIST post-quantum\nstandards FINAL',{size:.18}); m1.position.set(-11.9,1.5,0); rail.add(m1);
+    rail.add(mkLine([[-11.6,.9,0],[-11.6,.1,0]],GREEND,.6));
+    const m2=makeLabel('2029 — IBM target:\n200 logical (unbuilt)',{size:.18}); m2.position.set(-11+4/20*22,1.7,0); rail.add(m2);
+    rail.add(mkLine([[-11+4/20*22,1.1,0],[-11+4/20*22,.1,0]],GREEND,.6));
+    rail.position.set(0,-2.6,0); g.add(rail);
+    // survey panel
+    const p1=makeLabel(
+      'EXPERT SURVEY — GRI / MOSCA (2025)\nP(code-breaking quantum computer):\n  within 10 years : 28–49%\n  within 15 years : 51–70%',
+      {size:.3,align:'left',bg:'rgba(255,255,255,.85)'});
+    p1.position.set(-6.4,3.4,-1); g.add(p1);
+    // today vs machine A
+    const dotToday=glowSprite(.5); dotToday.position.set(3.4,2.6,0); g.add(dotToday);
+    const lToday=makeLabel('TODAY — low hundreds of\nlogical qubits (noisy)',{size:.2}); lToday.position.set(3.4,3.5,0); g.add(lToday);
+    const boxA=wireBox(1.5,1.0,1.0,GREEN,.9); boxA.position.set(6.8,2.6,0); g.add(boxA);
+    const lA=makeLabel('MACHINE A (unbuilt)\n~1,200–1,450 logical\n< 500,000 physical',{size:.2}); lA.position.set(6.8,3.9,0); g.add(lA);
+    g.add(mkLine([[3.8,2.6,0],[6.0,2.6,0]],GREEND,.5,true));
+    const gap=makeLabel('an order of magnitude — and an\nerror-correction regime — apart',{size:.18,ink:true,weight:400});
+    gap.position.set(5.2,1.8,0); g.add(gap);
+    // soft spot panel
+    const p2=makeLabel(
+      'THE SOFT SPOT\nexposed + reused keys: ~6.3–6.9M BTC (~30–35% of supply)\nincl. ~1.1M BTC of lost Satoshi-era coins — keys gone, no defense possible\nfresh hashed addresses: no visible target',
+      {size:.24,align:'left'});
+    p2.position.set(-5.2,.6,1.5); g.add(p2);
+    // the fix
+    const p3=makeLabel('THE FIX\npost-quantum signatures: standardized 2024\nBitcoin post-quantum soft fork: in active debate',
+      {size:.24,align:'left'});
+    p3.position.set(6.4,-.9,1); g.add(p3);
+    // closing line
+    const close=makeLabel(
+      'Real. Bounded. ~10–15 years out. The fix is already being written.\nYour soft spot is exposed and reused keys —\nand the lost Satoshi coins.',
+      {size:.34,ink:true});
+    close.position.set(0,5.6,-2); g.add(close);
+    const sub=makeLabel('every number on this axis is an estimate — the machine does not exist',{size:.17});
+    sub.position.set(0,4.6,-2); g.add(sub);
+    trackLine(L,[[0,.8,0]]); portalSign(L,'THE MACHINE IN QUESTION');
+  },
+  tick(L,t){ if(L.portalHalo) L.portalHalo.scale.setScalar(1+Math.sin(t*2)*.12); }
+});
+
+/* ############################################################################
+   idx 1 — O3 · MACHINE B — THE MINING-ATTACKER
+############################################################################ */
+defLevel({
+  short:'O3', name:'MACHINE B — THE MINING-ATTACKER',
+  desc:'the star-scale monster FUD imagines · applies ONLY to mining, never to signatures',
+  camStart:[-15,8,22], portal:[11.8,-3.2,7.2], center:[0,0,0],
+  build(L){
+    const g=L.group;
+    // star core
+    const core=glowSprite(7,'#00ff41',.9); g.add(core);
+    const core2=glowSprite(3.2,'#ffffff',.95); g.add(core2);
+    const ico=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(2.6,1)),
+      new THREE.LineBasicMaterial({color:GREEN,transparent:true,opacity:.5}));
+    g.add(ico);
+    // dyson swarm — instanced hex plates on partial sphere
+    const swarm=new THREE.Group();
+    const hexGeo=new THREE.CylinderGeometry(.42,.42,.05,6);
+    const positions=[];
+    const N=1100, GA=Math.PI*(3-Math.sqrt(5));
+    for(let i=0;i<N;i++){
+      if(i%5===0) continue;                     // leave gaps — under construction
+      const y=1-(i/(N-1))*2, r=Math.sqrt(1-y*y), a=GA*i;
+      positions.push(V(Math.cos(a)*r*9.5, y*9.5, Math.sin(a)*r*9.5));
+    }
+    const chunks=3, per=Math.ceil(positions.length/chunks);
+    for(let c=0;c<chunks;c++){
+      const slice=positions.slice(c*per,(c+1)*per);
+      const im=new THREE.InstancedMesh(hexGeo,
+        new THREE.MeshStandardMaterial({color:0x0e3a1c,metalness:.6,roughness:.5,transparent:true,opacity:.95}),slice.length);
+      const M=new THREE.Matrix4(), Q=new THREE.Quaternion(), up=V(0,1,0);
+      slice.forEach((p,i)=>{
+        Q.setFromUnitVectors(up,p.clone().normalize());
+        M.compose(p,Q,V(1,1,1)); im.setMatrixAt(i,M);
+      });
+      swarm.add(im);
+    }
+    // scaffold rings
+    for(const rot of [[0,0,0],[Math.PI/3,0,.4],[-Math.PI/4,.6,0]]){
+      const tr=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.TorusGeometry(11,.06,4,90)),
+        new THREE.LineBasicMaterial({color:GREEN,transparent:true,opacity:.25}));
+      tr.rotation.set(...rot); swarm.add(tr);
+    }
+    g.add(swarm); L.swarm=swarm;
+    const dysL=makeLabel('A DYSON-SWARM SHELL — collector panels englobing a star:\nthe only way to feed ~10^25 watts',{size:.3});
+    dysL.position.set(0,12.4,4); g.add(dysL);
+    g.add(mkLine([[0,11.4,4],[0,9.9,3]],GREEND,.6));
+    // specs — star numbers live HERE and only here
+    const spec=makeLabel(
+      'MACHINE B — THE MINING-ATTACKER\n(what "quantum kills Bitcoin" FUD imagines)\n\n~10^23 qubits  ·  ~10^25 WATTS\nTHE ENERGY OUTPUT OF A STAR\n\nrequired to out-race SHA-256 proof-of-work\nthese numbers apply ONLY to attacking MINING',
+      {size:.32,align:'left',bg:'rgba(255,255,255,.88)'});
+    spec.position.set(-11.5,5.5,4); g.add(spec);
+    const cap=makeLabel(
+      'This is what "quantum kills Bitcoin" would actually require.\nBitcoin MINING is safe essentially forever.\nOnly exposed SIGNATURES are the real target.',
+      {size:.3,ink:true});
+    cap.position.set(0,-8.6,4); g.add(cap);
+    // machine A speck
+    const speck=glowSprite(.55); speck.position.copy(L.portal); g.add(speck);
+    const lead=mkLine([[13.8,1.6,7.2],[12.2,-2.7,7.2],[11.95,-3.05,7.2]],GREEND,.7); g.add(lead);
+    const sl=makeLabel('MACHINE A — the ENTIRE signature-cracking\nhall — is this speck',{size:.24}); sl.position.set(14.2,2.4,7.2); g.add(sl);
+    trackLine(L,[[2,0,2]]); portalSign(L,'MACHINE A — THE REAL THREAT',[0,1.1,0]);
+  },
+  tick(L,t,dt){ if(L.swarm) L.swarm.rotation.y+=dt*.03; }
+});
+
+/* ############################################################################
+   idx 2 — O2 · MACHINE A — THE SIGNATURE-CRACKER
+############################################################################ */
+defLevel({
+  short:'O2', name:'MACHINE A — THE SIGNATURE-CRACKER',
+  desc:'the real, bounded threat · a hall of ~340 dilution fridges · hypothetical',
+  camStart:[-22,11,27], portal:[0,.8,-2.5], center:[0,2,0],
+  build(L){
+    const g=L.group;
+    // hall floor
+    const floor=gridPatch(46,26,2.3,GREEN,.13); floor.position.y=0; g.add(floor);
+    // fridge positions (aisle down the middle)
+    const pos=[];
+    for(let x=-16.1;x<=16.1;x+=2.3){ if(Math.abs(x)<1.5) continue;
+      for(let z=-10.35;z<=10.35;z+=2.3){ if(Math.abs(z+2.5)<1.2 && Math.abs(x)<3.5) continue; pos.push([x,z]); } }
+    // -> ~330 fridges. build 4 quadrant chunks × (discs, rods, plates)
+    const gold=()=>new THREE.MeshStandardMaterial({color:0xc9a227,metalness:.75,roughness:.35,transparent:true});
+    const discGeo=new THREE.CylinderGeometry(1,1,.06,14);
+    const rodGeo=new THREE.CylinderGeometry(.028,.028,1.7,5);
+    const plateGeo=new THREE.CylinderGeometry(.16,.2,.34,8);
+    const DR=[.55,.47,.39,.31,.23], DY=[2.5,2.12,1.74,1.36,.98];
+    const quads=[[],[],[],[]];
+    pos.forEach(p=>quads[(p[0]>0?1:0)+(p[1]>0?2:0)].push(p));
+    const M=new THREE.Matrix4(), Q=new THREE.Quaternion();
+    for(const q of quads){
+      const chunk=new THREE.Group();
+      const discs=new THREE.InstancedMesh(discGeo,gold(),q.length*5);
+      const rods=new THREE.InstancedMesh(rodGeo,gold(),q.length*3);
+      const plates=new THREE.InstancedMesh(plateGeo,gold(),q.length);
+      q.forEach((p,i)=>{
+        for(let d=0;d<5;d++){ M.compose(V(p[0],DY[d],p[1]),Q,V(DR[d],1,DR[d])); discs.setMatrixAt(i*5+d,M); }
+        for(let r=0;r<3;r++){ const a=r/3*Math.PI*2;
+          M.compose(V(p[0]+Math.cos(a)*.3,1.72,p[1]+Math.sin(a)*.3),Q,V(1,1,1)); rods.setMatrixAt(i*3+r,M); }
+        M.compose(V(p[0],.72,p[1]),Q,V(1,1,1)); plates.setMatrixAt(i,M);
+      });
+      chunk.add(discs,rods,plates); g.add(chunk);
+    }
+    // overhead cable trays
+    for(let z=-9;z<=9;z+=4.6){
+      g.add(mkLine([[-21,4.1,z],[21,4.1,z]],GREEND,.4));
+      g.add(mkLine([[-21,4.0,z+.2],[21,4.0,z+.2]],GREEND,.25));
+    }
+    // spec panel
+    const spec=makeLabel(
+      'MACHINE A — THE SIGNATURE-CRACKER\nSTATUS: HYPOTHETICAL — nothing at this scale has been demonstrated\n\nLOGICAL QUBITS : ~1,200–1,450\nPHYSICAL QUBITS: < 500,000   (≈ 350 physical : 1 logical, error correction)\nTIME PER EXPOSED KEY: ~9–23 minutes\nPOWER: ~125 MW continuous — a small power plant\n           (rough estimate, wide error bars)\nTARGET: one EXPOSED public key at a time — nothing else',
+      {size:.3,align:'left',bg:'rgba(255,255,255,.9)'});
+    spec.position.set(0,8.2,-6); g.add(spec);
+    // why a hall
+    const why=makeLabel(
+      'WHY A HALL, NOT ONE FRIDGE\ncoldest-stage cooling budget: ~30 MICROWATTS per fridge\nevery qubit needs a control line · every line dumps heat\n500,000 qubits cannot fit in one box → lash ~340 boxes together\n(each chandelier here: ~1,500 physical qubits)',
+      {size:.24,align:'left'});
+    why.position.set(10.8,5.2,2.5); why.rotation.y=-.35; g.add(why);
+    // cutaway fridge (enlarged, staged labels)
+    const cut=new THREE.Group();
+    const stages=[['300 K',3.1,.75],['50 K',2.55,.62],['4 K',2.0,.5],['STILL · 0.7 K',1.45,.4],
+                  ['COLD PLATE · 0.1 K',.95,.3],['MIXING CHAMBER ~0.01 K\ncooling budget ≈ 30 µW',.4,.22]];
+    for(const [txt,y,r] of stages){
+      const d=new THREE.Mesh(new THREE.CylinderGeometry(r,r,.07,18),
+        new THREE.MeshStandardMaterial({color:0xc9a227,metalness:.75,roughness:.35,transparent:true}));
+      d.position.y=y; cut.add(d);
+      const lb=makeLabel(txt,{size:.13,align:'left'}); lb.position.set(r+1.15,y,0); cut.add(lb);
+      cut.add(mkLine([[r+.05,y,0],[r+.5,y,0]],GREEND,.6));
+    }
+    for(let r=0;r<3;r++){ const a=r/3*Math.PI*2;
+      const rod=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,2.9,5),
+        new THREE.MeshStandardMaterial({color:0xc9a227,metalness:.7,roughness:.4,transparent:true}));
+      rod.position.set(Math.cos(a)*.34,1.75,Math.sin(a)*.34); cut.add(rod); }
+    cut.scale.setScalar(1.6); cut.position.set(-12.5,0,12.6); cut.rotation.y=.38; g.add(cut);
+    // helium-3 canisters
+    const he=new THREE.Group();
+    for(let i=0;i<6;i++){
+      const c=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,1.5,12),
+        new THREE.MeshStandardMaterial({color:0x8a8f8a,metalness:.6,roughness:.45,transparent:true}));
+      c.position.set((i%3)*1.1-1.1,0.75,Math.floor(i/3)*1.1); he.add(c);
+    }
+    const heL=makeLabel('HELIUM-3\nsourced from nuclear-weapons stockpiles (tritium decay)\nglobal supply deficit — a real chokepoint, not a hard wall',
+      {size:.2,align:'left'});
+    heL.position.set(0,2.8,.5); he.add(heL);
+    he.position.set(13.5,0,12.4); he.rotation.y=-.25; g.add(he);
+    // power block
+    const pw=new THREE.Group();
+    pw.add(wireBox(3,2.2,2.2,GREEN,.6));
+    const pwL=makeLabel('SUBSTATION\n~125 MW draw\n(rough estimate)',{size:.18}); pwL.position.y=2.2; pw.add(pwL);
+    pw.position.set(-14,1.1,-9); g.add(pw);
+    // honesty footer
+    const foot=makeLabel('EVERY NUMBER ON THIS FLOOR IS A PAPER ESTIMATE FOR A MACHINE NO ONE HAS BUILT.',{size:.26,ink:true});
+    foot.position.set(0,-1.6,8); g.add(foot);
+    // operator platform (portal home)
+    const plat=new THREE.Group();
+    plat.add(ringLine(1.1,GREEN,.8)); plat.children[0].rotation.x=-Math.PI/2;
+    plat.add(wireBox(2.2,.08,2.2,GREEN,.4));
+    plat.position.set(0,.05,-2.5); g.add(plat);
+    trackLine(L,[[0,2.5,4]]); portalSign(L,'THE LOADOUT — WHAT THIS IS FOR',[0,1.3,0]);
+  }
+});
+
+/* ############################################################################
+   idx 3 — O1 · ASSEMBLY — THE LOADOUT
+############################################################################ */
+defLevel({
+  short:'O1', name:'ASSEMBLY — THE LOADOUT',
+  desc:'pull back from the human — the machine required starts assembling',
+  camStart:[11,7,15], portal:[0.4,0.3,0.2], center:[0,1.2,0],
+  build(L){
+    const g=L.group;
+    // pedestal under the tiny human (child level)
+    const ped=new THREE.Group();
+    const r1=ringLine(.75,GREEN,.9); r1.rotation.x=-Math.PI/2; ped.add(r1);
+    const r2=ringLine(1.35,GREEN,.35); r2.rotation.x=-Math.PI/2; ped.add(r2);
+    ped.position.set(.4,.3,.2); ped.userData.noAnim=true; g.add(ped);
+    // girders orbiting
+    for(let i=0;i<14;i++){
+      const gd=wireBox(6+rand()*5,.32,.32,GREEN,.5);
+      const a=rand()*Math.PI*2, r=4.5+rand()*7;
+      gd.position.set(Math.cos(a)*r,(rand()-.3)*7,Math.sin(a)*r);
+      gd.rotation.set(rand()*.6,rand()*Math.PI,rand()*.6);
+      g.add(gd);
+    }
+    // crane arms
+    for(const [x,z,ry] of [[-8,-4,.6],[7,-7,2.2],[-3,8,4.1]]){
+      const arm=new THREE.Group();
+      arm.add(wireBox(.5,9,.5,GREEN,.6));
+      const jib=wireBox(7,.4,.4,GREEN,.6); jib.position.set(3,4.6,0); arm.add(jib);
+      arm.add(mkLine([[6.2,4.4,0],[6.2,2.2,0]],GREEND,.6));
+      const hook=wireBox(.7,.7,.7,GREEN,.7); hook.position.set(6.2,1.8,0); arm.add(hook);
+      arm.position.set(x,0,z); arm.rotation.y=ry; g.add(arm);
+    }
+    // drifting qubit-chip carriers
+    const chipGeo=new THREE.BoxGeometry(.45,.1,.45);
+    const chips=new THREE.InstancedMesh(chipGeo,matMat(0x2f9e5b,.85),36);
+    const M=new THREE.Matrix4(), Q=new THREE.Quaternion();
+    for(let i=0;i<36;i++){
+      M.compose(V((rand()-0.5)*18,(rand()-.2)*9,(rand()-0.5)*18),
+        Q.setFromEuler(new THREE.Euler(rand(),rand()*3,rand())),V(1,1,1));
+      chips.setMatrixAt(i,M);
+    }
+    g.add(chips); L.chips=chips;
+    // blueprint panels
+    const bp=[['SPEC — TARGET:\nONE EXPOSED SIGNATURE',[-6.5,4.5,-5]],
+              ['REQUIRED:\nERROR-CORRECTED QUBITS\n(~350 physical : 1 logical)',[6.5,5.5,-3]],
+              ['COOLING: MILLIKELVIN\nHELIUM-3 SUPPLY: DEFICIT',[8,2.6,5]],
+              ['STATUS: DOES NOT EXIST\nassembling ESTIMATE…',[-7,1.2,5.5]]];
+    for(const [t,p] of bp){ const lb=makeLabel(t,{size:.26,align:'left',bg:'rgba(255,255,255,.8)'}); lb.position.set(...p); g.add(lb); }
+    // the cooling blueprint gets its visual: a dilution fridge + He-3 canisters
+    const mini=new THREE.Group();
+    [[.44,1.9],[.38,1.62],[.32,1.34],[.26,1.06],[.2,.78]].forEach(([r,y])=>{
+      const d=new THREE.Mesh(new THREE.CylinderGeometry(r,r,.06,12),matMat(0xc9a227,.95));
+      d.position.y=y; mini.add(d); });
+    for(const a of [0,2.1,4.2]){
+      const rod=new THREE.Mesh(new THREE.CylinderGeometry(.02,.02,1.3,5),matMat(0xc9a227,.95));
+      rod.position.set(Math.cos(a)*.24,1.35,Math.sin(a)*.24); mini.add(rod); }
+    for(const x of [-1.05,-1.45]){
+      const can=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,.62,10),matMat(0x9aa39b,.95));
+      can.position.set(x,.31,.2); mini.add(can); }
+    const miniL=makeLabel('dilution fridge · He-3 canisters',{size:.15}); miniL.position.set(-.4,2.35,.2); mini.add(miniL);
+    mini.position.set(8.2,0,6.6); g.add(mini);
+    // name the hardware so the loadout reads
+    const idl=[['QUBIT CHIP CARRIERS — hardware streaming in',[4.6,5.6,2.6]],
+               ['STRUCTURAL TRUSS — the fridge-hall frame',[-7.2,6.6,-1.5]],
+               ['ASSEMBLY CRANE',[-8,9.8,-4]]];
+    for(const [t2,p2] of idl){ const lb=makeLabel(t2,{size:.19}); lb.position.set(...p2); g.add(lb); }
+    // dashed outline of the future machine hall, to scale
+    const foot=new THREE.Group();
+    foot.add(mkLine([[-10,7.5,-6],[10,7.5,-6],[10,7.5,6],[-10,7.5,6],[-10,7.5,-6]],GREEN,.5,true));
+    const fl2=makeLabel('FOOTPRINT — machine hall, to scale',{size:.17}); fl2.position.set(0,8.2,-6); foot.add(fl2);
+    g.add(foot);
+    const head=makeLabel('TO TAKE EVEN ONE EXPOSED COIN, YOU MUST BUILD:',{size:.4,ink:true});
+    head.position.set(0,8,-4); g.add(head);
+    const sub=makeLabel('keep zooming out — it gets bigger',{size:.2});
+    sub.position.set(0,7.1,-4); g.add(sub);
+    trackLine(L,[[2,1.5,2]]); portalSign(L,'THE HUMAN — WHERE IT STARTED',[0,.9,0]);
+  },
+  tick(L,t){ if(L.chips) L.chips.position.y=Math.sin(t*.45)*.25; }   // hover, don't tornado
+});
+
+/* ############################################################################
+   idx 4 — L1 · THE CONSTRUCT — HUMAN + WALLET RACK
+############################################################################ */
+defLevel({
+  short:'L1', name:'THE CONSTRUCT — A HUMAN, A WALLET',
+  desc:'pick a wallet from the rack — your choice drives everything below',
+  camStart:[-10,6.5,13], portal:[1.05,4.15,0.62], center:[0,3.4,0],
+  build(L){
+    const g=L.group;
+    // hologram figure — the Construct renders a person as sampled data
+    const human=new THREE.Group();
+    const hsegs=[
+      {a:[-.38,.12,0], b:[-.3,2.95,0], r:.26},
+      {a:[ .38,.12,0], b:[ .3,2.95,0], r:.26},
+      {a:[-.45,3.18,0],b:[ .45,3.18,0],r:.27},
+      {a:[0,3.4,0],    b:[0,5.3,0],    r:.52, taper:.32},
+      {a:[-.72,5.15,0],b:[-.92,3.15,.12], r:.13},
+      {a:[ .72,5.2,0], b:[1.0,4.62,.28],  r:.13},
+      {a:[1.0,4.62,.28],b:[1.03,4.2,.52], r:.11},
+    ];
+    const hp=[], hb=[];
+    for(const s of hsegs){
+      const A=V(...s.a), Bp=V(...s.b), ax=Bp.clone().sub(A), len=ax.length(); ax.normalize();
+      const u0=Math.abs(ax.y)<.92?V(0,1,0):V(1,0,0);
+      const e1=u0.clone().cross(ax).normalize(), e2=ax.clone().cross(e1).normalize();
+      const n=Math.round(2200*len*s.r);
+      for(let i=0;i<n;i++){
+        const t2=rand(), th=rand()*Math.PI*2;
+        const rr=s.r*(s.taper?1-s.taper*t2:1)*(.94+rand()*.1);
+        const pt=A.clone().addScaledVector(ax,t2*len)
+          .addScaledVector(e1,Math.cos(th)*rr).addScaledVector(e2,Math.sin(th)*rr);
+        (rand()<.12?hb:hp).push(pt.x,pt.y,pt.z);
+      }
+    }
+    for(let i=0;i<620;i++){
+      const d=V(rand()*2-1,rand()*2-1,rand()*2-1).normalize();
+      (rand()<.12?hb:hp).push(d.x*.44, 5.95+d.y*.5, d.z*.4);
+    }
+    human.add(mkPoints(hp,0x11a63f,.05,.85));
+    human.add(mkPoints(hb,GREEN,.085,.95));
+    const ghost=matMat(0x9fd8ae,.16);
+    const gAdd=(geo,x,y,z,rz=0)=>{ const m=new THREE.Mesh(geo,ghost); m.position.set(x,y,z); m.rotation.z=rz; human.add(m); };
+    gAdd(new THREE.CylinderGeometry(.2,.27,2.9,10), -.34,1.55,0, .03);
+    gAdd(new THREE.CylinderGeometry(.2,.27,2.9,10),  .34,1.55,0, -.03);
+    gAdd(new THREE.CylinderGeometry(.46,.56,2,12), 0,4.35,0);
+    gAdd(new THREE.SphereGeometry(.46,14,12), 0,5.95,0);
+    // phone — translucent: this is the portal, the camera flies through it
+    const ph=new THREE.Mesh(new THREE.BoxGeometry(.56,1.06,.07),matMat(0x22382a,.9));
+    ph.position.set(1.05,4.15,.58); ph.rotation.x=-.12; human.add(ph);
+    const phe=wireBox(.56,1.06,.07,GREEN,.9); phe.position.copy(ph.position); phe.rotation.x=-.12; human.add(phe);
+    const scr=new THREE.Mesh(new THREE.PlaneGeometry(.48,.96),
+      new THREE.MeshBasicMaterial({color:GREEN,transparent:true,opacity:.3,depthWrite:false}));
+    scr.position.set(1.05,4.155,.625); scr.rotation.x=-.12; human.add(scr);
+    const sg=glowSprite(1.1); sg.position.set(1.05,4.15,.7); human.add(sg);
+    human.add(shadowDisc(2.1,.2));
+    g.add(human);
+    const fl=gridPatch(14,10,1,GREEN,.12); g.add(fl);
+    // ------- WALLET SELECT rack -------
+    const rack=new THREE.Group();
+    rack.add(wireBox(8.6,5.4,1.3,GREEN,.75));
+    rack.add(mkLine([[-4.3,1.05,.65],[4.3,1.05,.65]],GREEN,.5));
+    rack.add(mkLine([[-4.3,-1.35,.65],[4.3,-1.35,.65]],GREEN,.5));
+    const title=makeLabel('WALLET SELECT',{size:.34,ink:true}); title.position.set(0,3.35,.7); rack.add(title);
+    const sub=makeLabel('choose a program to load — click a case',{size:.16}); sub.position.set(0,2.9,.7); rack.add(sub);
+    L.cases=[]; L.hits=[];
+    const items=[
+      (grp)=>{ const b=wireBox(.75,.75,.75,GREEN,.9); b.position.y=.15; grp.add(b);
+               const d=glowSprite(.5); d.position.y=.15; grp.add(d);
+               const y=makeLabel('2009',{size:.13}); y.position.set(0,-.55,.3); grp.add(y); },
+      (grp)=>{ const p=new THREE.Mesh(new THREE.BoxGeometry(.5,.95,.06),matMat(0x22382a,.95)); p.position.y=.1; grp.add(p);
+               const s=new THREE.Mesh(new THREE.PlaneGeometry(.42,.85),
+                 new THREE.MeshBasicMaterial({color:GREEN,transparent:true,opacity:.8})); s.position.set(0,.1,.035); grp.add(s); },
+      (grp)=>{ const tag=new THREE.Mesh(new THREE.PlaneGeometry(.9,.55),
+                 new THREE.MeshBasicMaterial({color:0xcf9000,transparent:true,opacity:.35})); tag.position.y=.15; grp.add(tag);
+               const e=wireBox(.9,.55,.02,AMBER,.9); e.position.y=.15; grp.add(e);
+               const h=makeLabel('SPENT\nONCE',{size:.11,color:'#cf9000'}); h.position.set(0,.15,.03); grp.add(h); },
+    ];
+    const caseLabels=['SATOSHI · 2009\n50 BTC · P2PK','YOUR MODERN WALLET\n6.15 BTC · P2WPKH','A REUSED ADDRESS\n0.1337 BTC · P2PKH'];
+    for(let i=0;i<3;i++){
+      const cs=new THREE.Group();
+      const frame=wireBox(2.1,2.5,1.1,GREEN,.8); cs.add(frame); cs.userData.frame=frame;
+      items[i](cs);
+      const lb=makeLabel(caseLabels[i],{size:.135}); lb.position.set(0,-1.7,.6); cs.add(lb);
+      const loaded=makeLabel('◉ LOADED',{size:.14,bg:'rgba(0,20,8,.85)'}); loaded.position.set(0,1.55,.6);
+      loaded.visible=false; cs.add(loaded); cs.userData.loaded=loaded;
+      const hit=new THREE.Mesh(new THREE.BoxGeometry(2.5,3.6,2),
+        new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
+      hit.userData.wallet=i; cs.add(hit); L.hits.push(hit);
+      cs.position.set(-2.9+i*2.9,.2,0);
+      rack.add(cs); L.cases.push(cs);
+    }
+    rack.position.set(-4.2,2.6,-4.4); rack.rotation.y=.42; g.add(rack);
+    // background loadout racks receding into the white
+    for(let i=0;i<5;i++){
+      const rr=wireBox(8.6,5.4,1.3,GREEN,.16-i*.022);
+      rr.position.set(-6-i*2.2,2.6,-8.5-i*3.4); rr.rotation.y=.42; g.add(rr);
+    }
+    for(let i=0;i<4;i++){
+      const rr=wireBox(7,4.6,1.2,GREEN,.13-i*.02);
+      rr.position.set(7+i*2.5,2.3,-9-i*3.6); rr.rotation.y=-.5; g.add(rr);
+    }
+    const note=makeLabel('the target is never the device — it is the math inside ▼',{size:.15});
+    note.position.set(3.4,5.4,.6); g.add(note);
+    trackLine(L,[[-2,4.5,3]]); portalSign(L,'INTO THE PHONE',[0,.55,0]);
+  },
+  tick(L,t){
+    L.cases.forEach((cs,i)=>{
+      const sel=i===curW;
+      cs.userData.frame.material.color.setHex(sel?GREEN:GREEND);
+      cs.userData.frame.material.userData.op0=sel?1:.55;
+      cs.userData.loaded.visible=sel;
+      cs.scale.setScalar(sel?1+Math.sin(t*3)*.012:1);
+    });
+  }
+});
+
+/* ############################################################################
+   idx 5 — L2 · THE WALLET APP
+############################################################################ */
+function drawPhoneUI(cx,W,H,w){
+  cx.fillStyle='#ffffff'; cx.fillRect(0,0,W,H);
+  cx.strokeStyle='#111'; cx.lineWidth=6; cx.strokeRect(8,8,W-16,H-16);
+  const mono=(s,w2=400)=>cx.font=`${w2} ${s}px ${FONT}`;
+  cx.fillStyle='#666'; mono(26); cx.textAlign='left';
+  cx.fillText('CONSTRUCT OS',36,58); cx.textAlign='right'; cx.fillText('▮▮▮ 100%',W-36,58);
+  cx.textAlign='left'; cx.fillStyle='#111'; mono(40,700); cx.fillText('CONSTRUCT WALLET v0.21',36,132);
+  cx.strokeStyle='#ddd'; cx.lineWidth=2; cx.beginPath(); cx.moveTo(36,160); cx.lineTo(W-36,160); cx.stroke();
+  cx.fillStyle='#0aa832'; mono(30); cx.fillText('BALANCE',36,225);
+  cx.shadowColor='rgba(0,200,56,.5)'; cx.shadowBlur=5; cx.fillStyle='#0b8c31'; mono(96,700);
+  cx.fillText(w.btc,36,330); cx.shadowBlur=0;
+  cx.fillStyle='#111'; mono(40,700); cx.fillText('BTC',36+cx.measureText(w.btc).width*2.1,330);
+  mono(28); cx.fillStyle='#333';
+  cx.fillText('TYPE     '+w.type,36,420);
+  cx.fillText('ADDRESS  '+w.addr,36,466);
+  cx.fillText('UTXOs    1',36,512);
+  cx.fillStyle=w.exposed?'#b97800':'#0aa832';
+  cx.fillText('KEY      '+w.exline,36,558);
+  // buttons
+  cx.strokeStyle='#0aa832'; cx.lineWidth=3;
+  cx.strokeRect(36,610,(W-96)/2,84); cx.strokeRect(60+(W-96)/2,610,(W-96)/2,84);
+  cx.fillStyle='#0a7a28'; mono(32,700); cx.textAlign='center';
+  cx.fillText('RECEIVE',36+(W-96)/4,664); cx.fillText('SEND',60+(W-96)*3/4,664);
+  cx.textAlign='left'; cx.fillStyle='#111'; mono(30,700); cx.fillText('HISTORY',36,780);
+  mono(26); cx.fillStyle='#444';
+  w.txs.forEach((t,i)=>cx.fillText(t,36,830+i*46));
+  cx.fillStyle='#999'; mono(24);
+  cx.fillText('node: synced · block 950,412 · fees: 3 sat/vB',36,H-60);
+}
+defLevel({
+  short:'L2', name:'THE WALLET APP',
+  desc:'the balance is not stored here — it is a claim on math out on the chain',
+  camStart:[9,-5,14], portal:[-1.2,2.6,0.5], center:[0,.5,0],
+  build(L){
+    const g=L.group;
+    L.phones=WALLETS.map(w=>{
+      const p=panel(7.2,14.4,(cx,W,H)=>drawPhoneUI(cx,W,H,w),1024);
+      p.position.set(0,0,0); g.add(p); p.visible=false; return p;
+    });
+    const bezel=wireBox(7.7,14.9,.3,GREEN,.5); g.add(bezel);
+    // exploded layers behind
+    const back1=wireBox(7.2,14.4,.02,GREEN,.16); back1.position.z=-1.6; g.add(back1);
+    const back2=wireBox(7.2,14.4,.02,GREEN,.09); back2.position.z=-3.2; g.add(back2);
+    // secure element callout
+    const se=new THREE.Group();
+    se.add(wireBox(1.6,1.6,.3,GREEN,.85));
+    for(let i=0;i<6;i++){ se.add(mkLine([[-.8+i*.32,-1.0,0],[-.8+i*.32,-.8,0]],GREEN,.7)); }
+    const seL=makeLabel('SECURE ELEMENT / SEED\nyour PRIVATE key lives here (or on paper)\nit never touches the network',{size:.2,align:'left'});
+    seL.position.set(0,1.9,0); se.add(seL);
+    se.position.set(-7.6,-3.4,1.2); g.add(se);
+    const r1=makeLabel('a balance is not a thing stored in a phone —\nit is the sum of UTXOs recorded on the chain ▼',{size:.24,align:'left'});
+    r1.position.set(6.6,3.2,1); g.add(r1);
+    const r2=makeLabel('lose the phone, keep the seed → coins fine\nlose the seed → the math below never unlocks',{size:.2,align:'left'});
+    r2.position.set(6.8,-4.6,1); g.add(r2);
+    trackLine(L,[[2.5,-.5,2]]); portalSign(L,'INTO THE LEDGER',[1.3,.75,0]);
+  }
+});
+
+/* ############################################################################
+   idx 6 — L3 · THE TIMECHAIN
+############################################################################ */
+defLevel({
+  short:'L3', name:'THE TIMECHAIN',
+  desc:'one ledger, every node — rewriting it means redoing the work',
+  camStart:[-13,7,16], portal:[0,0,1.95], center:[0,0,0],
+  build(L){
+    const g=L.group;
+    // chain of blocks
+    const chain=new THREE.Group(); chain.userData.noAnim=false;
+    let prev=null;
+    for(let i=-7;i<=7;i++){
+      const p=V(i*2.35, Math.sin(i*.55)*1.5, Math.cos(i*.4)*1.2-1.2);
+      const cur=i===0;
+      const b=new THREE.Group();
+      b.add(wireBox(1.45,1.45,1.45,GREEN,cur?1:.6));
+      let inner;
+      if(cur){ inner=new THREE.Mesh(new THREE.BoxGeometry(1.4,1.4,1.4),matMat(0x2f9e5b,.8)); inner.userData.isPanel=true; }
+      else inner=solidBox(1.45,1.45,1.45,GREEN,.04);
+      b.add(inner);
+      if(cur){ const gl=glowSprite(1.8); gl.userData.isPanel=true; b.add(gl); }
+      b.position.copy(p); chain.add(b);
+      if(prev) chain.add(mkLine([prev,p],GREEN,.7));
+      if(i%3===0 && !cur){
+        const h=makeLabel('00000000000000000002'+Math.floor(rand()*16777215).toString(16)+'…',{size:.14});
+        h.position.copy(p).add(V(0,1.3,0)); chain.add(h);
+      }
+      prev=p;
+    }
+    const curL=makeLabel('BLOCK 950,412 — contains your UTXO',{size:.2});
+    curL.position.set(0,1.6,-0.2); chain.add(curL);
+    g.add(chain);
+    // node lattice
+    const nodes=[]; const npos=[];
+    for(let i=0;i<420;i++){
+      const a=rand()*Math.PI*2, ph=Math.acos(rand()*2-1), r=8.5+rand()*7;
+      const p=V(Math.sin(ph)*Math.cos(a)*r, Math.cos(ph)*r*.75, Math.sin(ph)*Math.sin(a)*r-1);
+      nodes.push(p); npos.push(p.x,p.y,p.z);
+    }
+    g.add(mkPoints(npos,GREEN,.14,.6));
+    const segs=[];
+    for(let i=0;i<560;i++){
+      const a=nodes[Math.floor(rand()*nodes.length)];
+      let best=null,bd=1e9;
+      for(let j=0;j<12;j++){ const b=nodes[Math.floor(rand()*nodes.length)];
+        const d=a.distanceToSquared(b); if(d>.5&&d<bd){bd=d;best=b;} }
+      if(best) segs.push(a,best);
+    }
+    g.add(mkSegs(segs,GREEN,.1));
+    const head=makeLabel('~950,000 BLOCKS SINCE JANUARY 2009',{size:.4,ink:true});
+    head.position.set(0,6.6,-3); g.add(head);
+    const sub=makeLabel('every node holds the same ledger — ~22,000 reachable nodes\nno one edits history without redoing the proof-of-work',{size:.22});
+    sub.position.set(0,5.6,-3); g.add(sub);
+    trackLine(L,[[-3,1.5,1]]); portalSign(L,'INTO BLOCK 950,412',[0,1.15,0]);
+  }
+});
+
+/* ############################################################################
+   idx 7 — L4 · INSIDE A BLOCK — ONE UTXO
+############################################################################ */
+defLevel({
+  short:'L4', name:'THE UTXO SET — ONE LOCKED BOX',
+  desc:'born in block 950,412 · lives in the UTXO set every node keeps — everyone sees it, one key opens it',
+  camStart:[-11,8,15], portal:[3.2,-1.4,0.8], center:[0,.5,0],
+  build(L){
+    const g=L.group;
+    const shell=wireBox(19,11,10,GREEN,.22); g.add(shell);
+    const hdr=makeLabel(
+      'BLOCK 950,412\nprev  : 000000000000000000021c4f8a…\nmerkle: 8f3ab2c9d1e07a44…\ntime  : 2026-07-07 09:41 UTC\nnonce : 2,483,291,057\ntxs   : 3,214',
+      {size:.24,align:'left',bg:'rgba(255,255,255,.85)'});
+    hdr.position.set(-5.6,3.3,0); g.add(hdr);
+    // merkle tree
+    const tree=new THREE.Group();
+    const root=V(-1.5,4.3,-1.5);
+    const leaves=[];
+    for(let i=0;i<16;i++) leaves.push(V(-8.2+i*.82,-0.4,-1.5));
+    let layer=leaves;
+    const dot=(p,s=.05,op=.8)=>{ const d=glowSprite(s*6,'#00ff41',op); d.position.copy(p); tree.add(d); };
+    leaves.forEach(p=>dot(p,.04,.6));
+    while(layer.length>1){
+      const next=[];
+      for(let i=0;i<layer.length;i+=2){
+        const m=layer[i].clone().add(layer[i+1]).multiplyScalar(.5); m.y+=1.15;
+        tree.add(mkLine([layer[i],m],GREEN,.4)); tree.add(mkLine([layer[i+1],m],GREEN,.4));
+        dot(m,.05,.7); next.push(m);
+      }
+      layer=next;
+    }
+    const rl=makeLabel('merkle root',{size:.15}); rl.position.copy(layer[0]).add(V(0,.5,0)); tree.add(rl);
+    g.add(tree);
+    // tx plates
+    for(let i=0;i<16;i++){
+      const tx=wireBox(.72,.3,.5,GREEN,i===11?.95:.4);
+      tx.position.set(-8.2+i*.82,-1.5,-1.5); g.add(tx);
+    }
+    g.add(mkLine([[-8.2+11*.82,-1.5,-1.2],[1.4,-1.4,0],[2.2,-1.4,.3]],GREEND,.7,true));
+    const txp=makeLabel('TX 8c2f41a9…\n in[0]  ← signed by previous owner\n out[0] → THIS UTXO (yours)',{size:.2,align:'left'});
+    txp.position.set(0,-3.2,.5); g.add(txp);
+    // the strongbox
+    const box=new THREE.Group();
+    box.add(wireBox(1.5,1.1,1.1,GREEN,1));
+    const boxBody=new THREE.Mesh(new THREE.BoxGeometry(1.47,1.07,1.07),matMat(0x2f9e5b,.9));
+    boxBody.userData.isPanel=true; box.add(boxBody);
+    const sh=new THREE.Mesh(new THREE.TorusGeometry(.3,.06,8,24,Math.PI),
+      new THREE.MeshBasicMaterial({color:GREEN,transparent:true,opacity:.9}));
+    sh.position.y=.72; box.add(sh);
+    const kh=ringLine(.12,GREEN,1,24); kh.position.set(0,.05,.56); box.add(kh);
+    box.add(mkLine([[0,-.08,.56],[0,-.24,.56]],GREEN,1));
+    const gl=glowSprite(1.5); gl.userData.isPanel=true; box.add(gl);
+    box.position.set(3.2,-1.4,0); g.add(box);
+    const bl=makeLabel('ONE UTXO — A LOCKED BOX ON A PUBLIC SHELF\ncreated in this block · now part of the UTXO SET,\nthe live database of who can spend what',{size:.2});
+    bl.position.set(3.2,-2.6,.6); g.add(bl);
+    trackLine(L,[[-2,1,1]]); portalSign(L,'INTO THE LOCK',[0,.8,0]);
+  }
+});
+
+/* ############################################################################
+   idx 8 — L5 · THE LOCKING SCRIPT
+############################################################################ */
+function drawScript(cx,W,H,w){
+  cx.fillStyle='rgba(255,255,255,.95)'; cx.fillRect(0,0,W,H);
+  cx.strokeStyle='#111'; cx.lineWidth=4; cx.strokeRect(6,6,W-12,H-12);
+  const mono=(s,w2=400)=>cx.font=`${w2} ${s}px ${FONT}`;
+  cx.fillStyle='#111'; mono(34,700); cx.textAlign='left';
+  cx.fillText('LOCKING SCRIPT  (scriptPubKey)',40,70);
+  cx.fillStyle='#888'; mono(24); cx.fillText('what the chain actually stores for this UTXO',40,110);
+  cx.shadowColor='rgba(0,200,56,.5)'; cx.shadowBlur=4; cx.fillStyle='#0b8c31'; mono(34,700);
+  const lines={
+    SATOSHI:['PUSH <PUBKEY 04a34b98c1…4f9c1e>','OP_CHECKSIG'],
+    MODERN:['OP_0','PUSH20 <hash160: 7d1a3cee…44c9>'],
+    REUSED:['OP_DUP OP_HASH160','PUSH20 <hash160: e02b6d18…9a41>','OP_EQUALVERIFY OP_CHECKSIG'],
+  }[w.key];
+  lines.forEach((l,i)=>cx.fillText(l,60,180+i*54));
+  cx.shadowBlur=0; mono(25);
+  const note={
+    SATOSHI:['the RAW PUBLIC KEY sits on-chain — naked — since January 2009.','no hash, no wrapper. the target below is already lit.'],
+    MODERN:['only a HASH of your key is public. the key itself appears','on-chain only at the moment you spend. until then: no target.'],
+    REUSED:['hashed — but this address ALREADY SPENT once.','its public key has been on-chain, public, since that day.'],
+  }[w.key];
+  cx.fillStyle=w.exposed?'#b97800':'#0a7a28';
+  note.forEach((l,i)=>cx.fillText(l,40,H-118+i*40));
+}
+defLevel({
+  short:'L5', name:'THE LOCKING SCRIPT',
+  desc:'SPENDABLE BY THE OWNER OF PUBLIC KEY ↓',
+  camStart:[8,6,15], portal:[0,-2.6,0.75], center:[0,0,0],
+  build(L){
+    const g=L.group;
+    const head=makeLabel('SPENDABLE BY THE OWNER OF PUBLIC KEY ↓',{size:.42,ink:true});
+    head.position.set(0,5.3,0); g.add(head);
+    L.scripts=WALLETS.map(w=>{
+      const p=panel(12.5,6.2,(cx,W,H)=>drawScript(cx,W,H,w),1100);
+      p.position.set(0,1.4,0); g.add(p); p.visible=false; return p;
+    });
+    // pubkey glyph target
+    const gl=new THREE.Group();
+    gl.add(wireBox(1.1,1.1,.5,GREEN,.95));
+    L.glyphExposed=new THREE.Group();
+    const pt=glowSprite(1.5); L.glyphExposed.add(pt);
+    const el=makeLabel('PUBKEY: VISIBLE',{size:.15}); el.position.set(0,-.95,.3); L.glyphExposed.add(el);
+    gl.add(L.glyphExposed);
+    L.glyphHidden=new THREE.Group();
+    for(let i=0;i<5;i++) L.glyphHidden.add(mkLine([[-.45,-.4+i*.2,.26],[.45,-.28+i*.2,.26]],GREEND,.8));
+    const hl=makeLabel('HASH WALL',{size:.15}); hl.position.set(0,-.95,.3); L.glyphHidden.add(hl);
+    gl.add(L.glyphHidden);
+    gl.position.set(0,-2.6,.3); g.add(gl);
+    // side readouts
+    const s1=makeLabel(
+      'WHO IS EXPOSED TODAY\nP2PK (Satoshi-era): ~1.1M BTC — keys naked on-chain\nreused addresses: key revealed by the first spend\ntotal exposed or reused: ~6.3–6.9M BTC (~30–35% of supply)',
+      {size:.21,align:'left'});
+    s1.position.set(-9.6,-1.5,1); g.add(s1);
+    const s2=makeLabel(
+      'FRESH, UNREUSED ADDRESSES\nnothing to attack until the moment you spend —\nand then: minutes of exposure, not years',
+      {size:.21,align:'left'});
+    s2.position.set(9.4,-1.5,1); g.add(s2);
+    trackLine(L,[[1.5,1,1.5]]); portalSign(L,'THE PUBLIC KEY ITSELF',[0,.8,.7]);
+  }
+});
+
+/* ############################################################################
+   idx 9 — L6 · SECP256K1 — HERO LEVEL
+############################################################################ */
+const CS=1.5, CYS=1.1, CYOFF=-1.2;
+const curveY=x=>Math.sqrt(x*x*x+7);
+const cPt=(x,side=1)=>V(x*CS, side*curveY(x)*CYS+CYOFF, 0);
+const PUB=cPt(2.2,1), GEN=cPt(-1.2,1);
+defLevel({
+  short:'L6', name:'SECP256K1 — THE PUBLIC KEY POINT',
+  desc:'y² = x³ + 7 · the point is the target — IF you can see it',
+  camStart:[-12,-6,17], portal:[PUB.x,PUB.y,.55], center:[0,.5,0],
+  build(L){
+    const g=L.group;
+    // axes
+    g.add(mkLine([[-6,CYOFF,0],[7.5,CYOFF,0]],GREEND,.25));
+    g.add(mkLine([[0,-8,0],[0,8,0]],GREEND,.25));
+    // continuous curve, twice for glow
+    const mkBranch=(side,op)=>{
+      const pts=[]; for(let x=-1.9129;x<=4.05;x+=.03) pts.push(cPt(x,side));
+      return mkLine(pts,GREEN,op);
+    };
+    g.add(mkBranch(1,.95),mkBranch(-1,.95));
+    const w1=mkBranch(1,.25); w1.scale.setScalar(1.008); g.add(w1);
+    const w2=mkBranch(-1,.25); w2.scale.setScalar(1.008); g.add(w2);
+    // discrete cloud
+    const cp=[];
+    for(let i=0;i<850;i++){
+      const x=-1.9+rand()*5.9, s=rand()<.5?1:-1, p=cPt(x,s);
+      cp.push(p.x+(rand()-.5)*.1, p.y+(rand()-.5)*.1, (rand()-.5)*.5);
+    }
+    g.add(mkPoints(cp,GREEN,.1,.5));
+    const cloudNote=makeLabel('the real curve is not smooth — it is ~2^256 discrete points\nover a finite field. this drawing is the shadow you can see.',{size:.17});
+    cloudNote.position.set(-4.4,-6.2,0); g.add(cloudNote);
+    // equation
+    const eq=makeLabel('y² = x³ + 7',{size:.85,ink:true}); eq.position.set(-3.6,6.3,0); g.add(eq);
+    const eq2=makeLabel('secp256k1 — the curve under every bitcoin',{size:.24}); eq2.position.set(-3.6,5.2,0); g.add(eq2);
+    // generator G
+    const gm=new THREE.Group();
+    gm.add(glowSprite(.8));
+    gm.add(mkLine([[-.35,0,0],[.35,0,0]],GREEN,.9)); gm.add(mkLine([[0,-.35,0],[0,.35,0]],GREEN,.9));
+    const glb=makeLabel('G — THE GENERATOR\n(everyone starts here)',{size:.16}); glb.position.set(-1.5,.7,0); gm.add(glb);
+    gm.position.copy(GEN); g.add(gm);
+    // ---- public key point: exposed vs hidden ----
+    L.exposedG=new THREE.Group();
+    const core=new THREE.Mesh(new THREE.SphereGeometry(.15,16,12),
+      new THREE.MeshBasicMaterial({color:GREEN})); L.exposedG.add(core); L.pubCore=core;
+    const exGlow=glowSprite(1.6); exGlow.userData.isPanel=true; L.exposedG.add(exGlow);
+    L.ring1=ringLine(.55,GREEN,.9); L.ring2=ringLine(.95,GREEN,.5);
+    L.exposedG.add(L.ring1,L.ring2);
+    L.exposedG.add(mkLine([[-1.5,0,0],[-.35,0,0]],GREEN,.7)); L.exposedG.add(mkLine([[.35,0,0],[1.5,0,0]],GREEN,.7));
+    L.exposedG.add(mkLine([[0,-1.5,0],[0,-.35,0]],GREEN,.7)); L.exposedG.add(mkLine([[0,.35,0],[0,1.5,0]],GREEN,.7));
+    L.exTag=WALLETS.map(w=>{
+      const lb=makeLabel('PUBLIC KEY — EXPOSED\n'+w.tag,{size:.19,bg:'rgba(255,255,255,.85)'});
+      lb.position.set(1.2,1.7,.2); lb.visible=false; L.exposedG.add(lb); return lb;
+    });
+    L.exposedG.position.copy(PUB); g.add(L.exposedG);
+    L.hiddenG=new THREE.Group();
+    const fz=[]; for(let i=0;i<240;i++){
+      fz.push((rand()-.5)*1.6*(rand()<.7?1:2),(rand()-.5)*1.6*(rand()<.7?1:2),(rand()-.5)*1.2); }
+    const fuzz=mkPoints(fz,GREEN,.09,.55); L.hiddenG.add(fuzz); L.fuzz=fuzz;
+    // hash wall
+    const wallCv=document.createElement('canvas'); wallCv.width=wallCv.height=512;
+    const wc=wallCv.getContext('2d');
+    wc.strokeStyle='rgba(0,170,50,.5)'; wc.lineWidth=2;
+    for(let i=-512;i<512;i+=22){ wc.beginPath(); wc.moveTo(i,512); wc.lineTo(i+512,0); wc.stroke(); }
+    wc.fillStyle='rgba(0,120,40,.9)'; wc.font=`700 26px ${FONT}`;
+    for(let r=0;r<10;r++) wc.fillText('a9 14 7d 1a 3c ee 44 c9 0b 52',18,44+r*50);
+    const wallTex=new THREE.CanvasTexture(wallCv); wallTex.colorSpace=THREE.SRGBColorSpace;
+    const wall=new THREE.Mesh(new THREE.PlaneGeometry(3.4,4.2),
+      new THREE.MeshBasicMaterial({map:wallTex,transparent:true,opacity:.75,side:THREE.DoubleSide,depthWrite:false}));
+    wall.position.z=.85; wall.userData.isPanel=true; L.hiddenG.add(wall);
+    L.hiddenG.add(wireBox(3.4,4.2,.03,GREEN,.6)).children;
+    const hw=makeLabel('HASH160 WALL\nRIPEMD160(SHA256(pubkey))\nno point visible — NO TARGET',{size:.19,bg:'rgba(255,255,255,.85)'});
+    hw.position.set(0,2.8,.9); L.hiddenG.add(hw);
+    const safe=makeLabel('SAFE — until the day you spend it',{size:.17}); safe.position.set(0,-2.7,.9); L.hiddenG.add(safe);
+    L.hiddenG.position.copy(PUB); g.add(L.hiddenG);
+    // ---- attack FX ----
+    L.fx=new THREE.Group(); L.fx.visible=false; L.fx.userData.noAnim=true;
+    L.rings=[];
+    for(const r of [3.2,2.5,1.8,1.2]){
+      const rr=ringLine(r,GREEN,.0); rr.material.userData.noFade=true; L.rings.push(rr); L.fx.add(rr);
+    }
+    const hop=[]; for(let x=2.2;x>=-1.2;x-=.243) hop.push(cPt(x,1));
+    hop.push(GEN.clone().sub(PUB).add(PUB));
+    const hopPts=hop.map(p=>p.clone().sub(PUB));
+    L.hopLine=mkLine(hopPts,GREEN,1); L.hopLine.material.userData.noFade=true; L.hopLine.material.opacity=0;
+    L.hopN=hopPts.length; L.fx.add(L.hopLine);
+    L.spark=glowSprite(1.2,'#ffffff',1); L.fx.add(L.spark);
+    L.fx.position.copy(PUB); g.add(L.fx);
+    // shor ticker
+    const tick=document.createElement('canvas'); tick.width=760; tick.height=210;
+    L.tickCx=tick.getContext('2d');
+    L.tickTex=new THREE.CanvasTexture(tick); L.tickTex.colorSpace=THREE.SRGBColorSpace;
+    const tm=new THREE.Mesh(new THREE.PlaneGeometry(6.2,1.7),
+      new THREE.MeshBasicMaterial({map:L.tickTex,transparent:true,depthWrite:false}));
+    tm.material.userData.noFade=true;
+    tm.position.set(4.6,-2.6,.4); g.add(tm); L.tickMesh=tm;
+    L.setTicker=(lines,color='#00a32f')=>{
+      const c=L.tickCx; c.clearRect(0,0,760,210);
+      if(lines.length){ c.fillStyle='rgba(6,10,7,.92)'; c.fillRect(0,0,760,210);
+        c.strokeStyle='#00ff41'; c.strokeRect(1,1,758,208);
+        c.font=`700 30px ${FONT}`; c.fillStyle=color; c.shadowColor='#00ff41'; c.shadowBlur=8;
+        lines.forEach((l,i)=>c.fillText(l,20,44+i*44)); }
+      L.tickTex.needsUpdate=true;
+    };
+    L.setTicker([]);
+    // mini lockbox that opens
+    L.lockG=new THREE.Group();
+    L.lockG.add(wireBox(.9,.65,.65,GREEN,.9));
+    L.shackle=new THREE.Mesh(new THREE.TorusGeometry(.2,.045,8,24,Math.PI),
+      new THREE.MeshBasicMaterial({color:GREEN,transparent:true,opacity:.95}));
+    L.shackle.position.y=.42; L.lockG.add(L.shackle);
+    L.lockLabel=makeLabel('UTXO — LOCKED',{size:.13}); L.lockLabel.position.y=-.75; L.lockG.add(L.lockLabel);
+    L.lockG.position.set(5.9,2.4,0); g.add(L.lockG);
+    // honest plate
+    const hp=makeLabel('an EXPOSED point is a target · a HIDDEN one is not\n(wallet select is back at the surface — L1)',{size:.16});
+    hp.position.set(4.6,-4.2,0); g.add(hp);
+    trackLine(L,[[-2,-2,1]]); portalSign(L,'THE TRAPDOOR — WHY BACKWARD IS A WALL',[.4,-1.0,0]);
+  },
+  tick(L,t,dt){
+    const w=WALLETS[curW];
+    L.exposedG.visible=w.exposed; L.hiddenG.visible=!w.exposed;
+    L.exTag.forEach((lb,i)=>lb.visible=i===curW&&w.exposed);
+    if(w.exposed){ const s=1+Math.sin(t*4)*.18; L.pubCore.scale.setScalar(s);
+      L.ring1.rotation.z=t*.7; L.ring2.rotation.z=-t*.45;
+      L.ring1.scale.setScalar(1+Math.sin(t*2)*.08); }
+    if(L.shakeT>0){ L.shakeT-=dt; L.hiddenG.position.copy(PUB).add(V((rand()-.5)*.12,(rand()-.5)*.12,0)); }
+    else L.hiddenG.position.copy(PUB);
+    // attack anim
+    if(atk.state==='run'){
+      const e=t-atk.t0;
+      L.fx.visible=true;
+      const op=L.lastOp<0?1:L.lastOp;
+      L.rings.forEach((r,i)=>{
+        const ph=clamp((e-i*.22)/1.6,0,1);
+        r.material.opacity=op*Math.sin(ph*Math.PI)*.9;
+        r.scale.setScalar(1-.85*ph); r.rotation.z=t*(.5+i*.3);
+      });
+      if(e<2){ L.spark.visible=false; L.hopLine.material.opacity=0;
+        if((e*8|0)!==L.lastTickN){ L.lastTickN=e*8|0;
+          L.setTicker(['SHOR — quantum period finding…','superposition over all hop-counts k','QFT: interference reveals the period']); } }
+      else if(e<4.4){
+        const f=(e-2)/2.4, n=Math.max(2,Math.round(f*L.hopN));
+        L.hopLine.material.opacity=op; L.hopLine.geometry.setDrawRange(0,n);
+        const pts=L.hopLine.geometry.attributes.position, i=Math.min(n-1,L.hopN-1);
+        L.spark.visible=true; L.spark.position.set(pts.getX(i),pts.getY(i),pts.getZ(i));
+        if((e*8|0)!==L.lastTickN){ L.lastTickN=e*8|0;
+          const kk='0x9A6E'+Math.floor(rand()*65536).toString(16).padStart(4,'0').toUpperCase();
+          L.setTicker(['period found — walking back k·G','candidate k = '+kk+'…','reversing the trapdoor…']); } }
+      else if(e<5.2){
+        if(!atk.keyShown){ atk.keyShown=true;
+          L.setTicker(['PRIVATE KEY RECOVERED','k = 0x9A6E 22D1 8C0B F1E4 … 7A31','signature forged — box unlocks','~9–23 min on Machine A (DOES NOT EXIST)'],'#00e03a'); } }
+      else{ atk.state='done'; sfx.unlock();
+        toast('<b>KEY RECOVERED — on paper.</b> Requires a machine that does not exist yet. Zoom out to see it. →'
+          +(curW===0?'<br>(~1.1M lost coins like this — their owners can never migrate them to safety.)':'')
+          +(curW===2?'<br>(This wallet could have re-hidden itself by moving to a fresh address — before the machine exists.)':''), 9000); }
+    }
+    if(atk.state==='done'){
+      L.shackle.rotation.z=Math.min(2.2,L.shackle.rotation.z+dt*3);
+      if(!atk.lockDone){ atk.lockDone=true;
+        L.lockLabel.visible=false;
+        L.lockOpen=makeLabel('UTXO — UNLOCKED',{size:.13,color:'#cf9000'});
+        L.lockOpen.position.y=-.75; L.lockG.add(L.lockOpen); }
+    }
+  }
+});
+
+/* ############################################################################
+   idx 10 — L7 · THE TRAPDOOR
+############################################################################ */
+defLevel({
+  short:'L7', name:'THE TRAPDOOR',
+  desc:'forward: one easy hop · backward: a cliff no classical computer climbs',
+  camStart:[-14,8,16], portal:[0,-4.6,0.6], center:[0,0,0],
+  build(L){
+    const g=L.group;
+    // mini curve + hop animation (forward)
+    const mini=new THREE.Group();
+    const mb=(side)=>{ const pts=[]; for(let x=-1.9;x<=3.4;x+=.05) pts.push(cPt(x,side)); return mkLine(pts,GREEN,.8); };
+    mini.add(mb(1),mb(-1));
+    L.hopXs=[-1.2,-.2,.9,1.7,2.4,3.0];
+    L.hopXs.forEach(x=>{ const d=glowSprite(.5); d.position.copy(cPt(x,1)); mini.add(d); });
+    L.chord=mkLine([[0,0,0],[0,0,0],[0,0,0]],GREEN,0); L.chord.material.userData.noFade=true; mini.add(L.chord);
+    L.walker=glowSprite(.9,'#ffffff',1); mini.add(L.walker);
+    mini.scale.setScalar(.62); mini.position.set(-4.6,3.4,0); g.add(mini); L.mini=mini;
+    const fl=makeLabel('FORWARD — P = k·G\ndraw a line through the curve, reflect. repeat k times.\nmicroseconds on your phone.',{size:.22,align:'left'});
+    fl.position.set(-8.4,.7,0); g.add(fl);
+    // ramp
+    const ramp=new THREE.Group();
+    ramp.add(mkLine([[-3,0,0],[3,2.6,0]],GREEN,.9));
+    ramp.add(mkLine([[-3,0,.5],[3,2.6,.5]],GREEN,.5));
+    ramp.add(mkLine([[-3,0,-.5],[3,2.6,-.5]],GREEN,.5));
+    for(let i=0;i<6;i++){ const x=-2.4+i;
+      ramp.add(mkLine([[x,(x+3)*.433-.25,0],[x+.4,(x+3.4)*.433,0],[x,(x+3)*.433+.05,0]],GREEND,.7)); }
+    ramp.position.set(-5,-3.9,0); g.add(ramp);
+    const rl=makeLabel('EASY',{size:.3,ink:true}); rl.position.set(-5,-1.1,0); g.add(rl);
+    // cliff
+    const cliffCv=document.createElement('canvas'); cliffCv.width=512; cliffCv.height=640;
+    const cc=cliffCv.getContext('2d');
+    cc.fillStyle='rgba(8,14,9,.88)'; cc.fillRect(0,0,512,640);
+    cc.strokeStyle='rgba(0,255,65,.28)'; cc.lineWidth=2;
+    for(let i=-640;i<512;i+=16){ cc.beginPath(); cc.moveTo(i,640); cc.lineTo(i+320,0); cc.stroke(); }
+    const cliffTex=new THREE.CanvasTexture(cliffCv); cliffTex.colorSpace=THREE.SRGBColorSpace;
+    const cliff=new THREE.Mesh(new THREE.PlaneGeometry(8.5,11),
+      new THREE.MeshBasicMaterial({map:cliffTex,transparent:true,opacity:.92,side:THREE.DoubleSide,depthWrite:false}));
+    cliff.position.set(4.6,1.2,-1); cliff.userData.isPanel=true; g.add(cliff);
+    g.add((()=>{ const e=wireBox(8.5,11,.06,GREEN,.5); e.position.set(4.6,1.2,-1); return e; })());
+    const ct=makeLabel('BACKWARD — find k from P',{size:.34,ink:true}); ct.position.set(4.6,7.4,-.9); g.add(ct);
+    const cw=makeLabel(
+      'guess the number of hops.\nk is one of ~2^256 values\nbest classical attack: ~2^128 steps\n\nevery computer on Earth, running for\nthe age of the universe: not close.',
+      {size:.26});
+    cw.position.set(4.6,2.6,-.85); g.add(cw);
+    const shor=makeLabel(
+      'SHOR\'S ALGORITHM (quantum): finds the period of the hop-walk —\nthe cliff becomes a staircase.\nIF the machine exists · ONLY for points you can SEE (exposed keys)',
+      {size:.22,bg:'rgba(255,255,255,.85)'});
+    shor.position.set(4.6,-3.4,-.8); g.add(shor);
+    // climbers
+    L.climbers=[];
+    for(let i=0;i<3;i++){ const c=glowSprite(.45); c.userData.off=i*.37; g.add(c); L.climbers.push(c); }
+    trackLine(L,[[-1,-1,1]]); portalSign(L,'THE NUMBER ITSELF',[0,.8,0]);
+  },
+  tick(L,t){
+    // forward hop anim
+    const per=1.4, cyc=(t/per)%L.hopXs.length, i=Math.floor(cyc), f=cyc-i;
+    const a=cPt(L.hopXs[i],1), b=cPt(L.hopXs[(i+1)%L.hopXs.length],1);
+    const mid=a.clone().lerp(b,.5); mid.y-=.9;
+    const p=a.clone().lerp(mid,f).lerp(mid.clone().lerp(b,f),f);
+    L.walker.position.copy(p);
+    const pos=L.chord.geometry.attributes.position;
+    pos.setXYZ(0,a.x,a.y,0); pos.setXYZ(1,mid.x,mid.y,0); pos.setXYZ(2,b.x,b.y,0); pos.needsUpdate=true;
+    L.chord.material.opacity=(L.lastOp<0?1:L.lastOp)*.6*Math.sin(f*Math.PI);
+    // climbers bounce low on the cliff
+    L.climbers.forEach((c,i)=>{
+      const f2=((t*.35)+c.userData.off)%1;
+      const y=f2<.75? f2/.75*2.0 : 2.0*(1-(f2-.75)/.25);
+      c.position.set(1.4+i*.7,-4.2+y,-0.8);
+    });
+  }
+});
+
+/* ############################################################################
+   idx 11 — L8 · THE PRIVATE KEY — 256 BITS (deepest floor)
+############################################################################ */
+defLevel({
+  short:'L8', name:'THE PRIVATE KEY — 256 BITS',
+  desc:'one number among 2^256 · the bottom of the rabbit hole',
+  camStart:[9,-6,15], portal:[0,0,1.2], center:[0,0,0],
+  build(L){
+    const g=L.group;
+    // 16×16 bit grid — two instanced meshes (zeros / ones)
+    const mkDigit=(ch)=>{
+      const cv=document.createElement('canvas'); cv.width=cv.height=96;
+      const c=cv.getContext('2d'); c.font=`700 78px ${FONT}`; c.textAlign='center'; c.textBaseline='middle';
+      c.shadowColor='#00ff41'; c.shadowBlur=12; c.fillStyle='#00c838'; c.fillText(ch,48,52);
+      const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace; return t;
+    };
+    const bits=[]; for(let i=0;i<256;i++) bits.push(rand()<.5?0:1);
+    const geo=new THREE.PlaneGeometry(.42,.42);
+    const grid=new THREE.Group();
+    for(const bit of [0,1]){
+      const idxs=bits.map((b,i)=>b===bit?i:-1).filter(i=>i>=0);
+      const im=new THREE.InstancedMesh(geo,
+        new THREE.MeshBasicMaterial({map:mkDigit(String(bit)),transparent:true,depthWrite:false}),idxs.length);
+      const M=new THREE.Matrix4(), Q=new THREE.Quaternion();
+      idxs.forEach((bi,i)=>{
+        M.compose(V((bi%16-7.5)*.55,(7.5-Math.floor(bi/16))*.55+1.4,(rand()-.5)*.2),Q,V(1,1,1));
+        im.setMatrixAt(i,M);
+      });
+      grid.add(im);
+    }
+    g.add(grid); L.grid=grid;
+    const head=makeLabel('A PRIVATE KEY IS JUST A NUMBER',{size:.5,ink:true});
+    head.position.set(0,7.2,0); g.add(head);
+    const hex=makeLabel('k = 0x9A6E 22D1 8C0B F1E4 55A9 03C7 … 7A31   (only the owner knows)',{size:.22});
+    hex.position.set(0,6.3,0); g.add(hex);
+    const count=makeLabel('one of 2^256 ≈ 1.16 × 10^77 possibilities —\nwithin a few orders of magnitude of the count of atoms in the observable universe',{size:.22});
+    count.position.set(0,-3.9,0); g.add(count);
+    const seed2=makeLabel('your seed phrase IS this number, dressed in 12–24 words',{size:.18});
+    seed2.position.set(0,-4.9,0); g.add(seed2);
+    // ------- fenced easter egg -------
+    const fence=new THREE.Group();
+    const FW=10.5, FD=3.4, FH=.85;
+    for(const [x,z] of [[-FW/2,-FD/2],[FW/2,-FD/2],[FW/2,FD/2],[-FW/2,FD/2]]){
+      const post=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,FH,6),
+        new THREE.MeshBasicMaterial({color:GREEN2,transparent:true,opacity:.8}));
+      post.position.set(x,FH/2,z); fence.add(post);
+    }
+    for(const y of [FH*.45,FH*.9]){
+      fence.add(mkLine([[-FW/2,y,-FD/2],[FW/2,y,-FD/2],[FW/2,y,FD/2],[-FW/2,y,FD/2],[-FW/2,y,-FD/2]],GREEN2,.6));
+    }
+    const gate=makeLabel('⚠ EASTER EGG — INTERPRETATION LAYER\n(fenced off: philosophy, not security)',{size:.17,ink:true,bg:'rgba(255,255,255,.9)'});
+    gate.position.set(0,FH+.55,FD/2); fence.add(gate);
+    const dd=makeLabel(
+      'David Deutsch — who invented the quantum computer — argued its power\ncomes from "many worlds": the same idea in Sean Carroll\'s work.',
+      {size:.19});
+    dd.position.set(0,FH+.1,0); fence.add(dd);
+    const cap=makeLabel(
+      'This is a debate about what\'s REAL, not about whether your coins are safe.\nIt changes the story, never the outcome.',
+      {size:.2,color:'#0a7a28'});
+    cap.position.set(0,FH-.75,0); fence.add(cap);
+    // branching-worlds motif
+    const tree=new THREE.Group();
+    const branch=(p,dir,len,depth)=>{
+      if(depth===0||len<.1) return;
+      const q=p.clone().addScaledVector(dir,len);
+      tree.add(mkLine([p,q],GREEN2,.3));
+      branch(q,dir.clone().applyAxisAngle(V(0,0,1),.5).normalize(),len*.62,depth-1);
+      branch(q,dir.clone().applyAxisAngle(V(0,0,1),-.5).normalize(),len*.62,depth-1);
+    };
+    branch(V(0,0,0),V(0,1,0),1,5);
+    tree.position.set(-4.2,0,-.8); tree.scale.setScalar(.9); fence.add(tree);
+    const tree2=tree.clone(); tree2.position.set(4.2,0,-.8); fence.add(tree2);
+    fence.position.set(0,-7.3,0); g.add(fence);
+    const floor2=makeLabel('— you have reached the bottom · zoom out ↑ —',{size:.16});
+    floor2.position.set(0,-9.2,0); g.add(floor2);
+    trackLine(L,[[1,-1,1]]);
+  },
+  tick(L,t){ if(L.grid) L.grid.scale.setScalar(1+Math.sin(t*.8)*.008); }
+});
+
+/* ============================ FINISH BUILD ============================ */
+for(const L of levels){ L.build(L); finishLevel(L); }
+
+/* ============================ WALLET SELECTION ============================ */
+const chipEl=document.getElementById('chip');
+const wbtns=WALLETS.map((w,i)=>{
+  const b=document.createElement('button'); b.className='wbtn';
+  b.innerHTML=w.btn+` <span class="st ${w.exposed?'ex':'hd'}">${w.exposed?'EXPOSED':'HIDDEN'}</span>`;
+  b.onclick=()=>selectWallet(i); chipEl.appendChild(b); return b;
+});
+const atk={state:'idle',t0:0,keyShown:false,lockDone:false};
+function resetAttack(){
+  atk.state='idle'; atk.keyShown=false; atk.lockDone=false;
+  const L6=levels[9];
+  L6.fx.visible=false; L6.hopLine.geometry.setDrawRange(0,0); L6.hopLine.material.opacity=0;
+  L6.spark.visible=false; L6.rings.forEach(r=>r.material.opacity=0);
+  L6.setTicker([]); L6.shackle.rotation.z=0;
+  L6.lockLabel.visible=true; if(L6.lockOpen){ L6.lockG.remove(L6.lockOpen); L6.lockOpen=null; }
+}
+function selectWallet(i){
+  curW=i;
+  wbtns.forEach((b,j)=>b.classList.toggle('sel',j===i));
+  levels[5].phones.forEach((p,j)=>{ p.visible=j===i; p.userData.vis=j===i; });
+  levels[8].scripts.forEach((p,j)=>{ p.visible=j===i; p.userData.vis=j===i; });
+  const L5=levels[8]; L5.glyphExposed.visible=WALLETS[i].exposed; L5.glyphHidden.visible=!WALLETS[i].exposed;
+  resetAttack(); updateAtkHud(); sfx.select();
+}
+/* ============================ HUD ============================ */
+const lvlname=document.getElementById('lvlname'), lvldesc=document.getElementById('lvldesc');
+const meterEl=document.getElementById('meter');
+const rows=levels.map((L,i)=>{
+  const r=document.createElement('div'); r.className='row';
+  r.innerHTML=`<span>${L.short} · ${L.name}</span><i></i>`;
+  r.onclick=()=>{ targetZ=clamp(i+.15,ZMIN,ZMAX); };
+  meterEl.appendChild(r); return r;
+});
+let hudK=-1;
+function updateHud(){
+  const k=clamp(Math.round(Z-.35),0,11);
+  if(k!==hudK){ hudK=k;
+    lvlname.textContent=levels[k].short+' · '+levels[k].name;
+    lvldesc.textContent=levels[k].desc;
+    rows.forEach((r,i)=>r.classList.toggle('cur',i===k));
+  }
+}
+const atkEl=document.getElementById('atk'), atkStat=document.getElementById('atkstat'), atkBtn=document.getElementById('atkbtn');
+function updateAtkHud(){
+  const w=WALLETS[curW];
+  atkStat.innerHTML=`TARGET: ${w.name} — <b style="color:${w.exposed?'#b97800':'#0a9a30'}">${w.exposed?'EXPOSED · key visible on-chain':'HIDDEN · behind a hash wall'}</b>`;
+  atkBtn.disabled=atk.state==='run';
+}
+const toastEl=document.getElementById('toast'); let toastTimer=0;
+function toast(html,ms=6000){
+  toastEl.innerHTML=html; toastEl.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>toastEl.classList.remove('show'),ms);
+}
+atkBtn.onclick=()=>{
+  const w=WALLETS[curW];
+  if(atk.state==='run') return;
+  if(!w.exposed){
+    levels[9].shakeT=.7; sfx.deny();
+    toast('<b>NO TARGET</b> — the public key is behind a hash wall. There is nothing to point the machine at.');
+    return;
+  }
+  resetAttack(); atk.state='run'; atk.t0=perfNow(); updateAtkHud(); sfx.sweep();
+};
+/* ============================ SOUND (synthesized, no assets) ============================ */
+const SND={ctx:null,on:true,master:null,whooshGain:null,whooshF:null};
+function sndInit(){
+  if(SND.ctx) return;
+  try{ SND.ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return; }
+  const c=SND.ctx;
+  SND.master=c.createGain(); SND.master.gain.value=SND.on?.5:0; SND.master.connect(c.destination);
+  // void drone — two detuned lows + sub, breathing
+  const g=c.createGain(); g.gain.value=.045; g.connect(SND.master);
+  for(const [f,v] of [[54,1],[54.6,1],[108,.35]]){
+    const o=c.createOscillator(); o.type='sine'; o.frequency.value=f;
+    const og=c.createGain(); og.gain.value=v; o.connect(og); og.connect(g); o.start();
+  }
+  const lfo=c.createOscillator(); lfo.frequency.value=.07;
+  const lg=c.createGain(); lg.gain.value=.018; lfo.connect(lg); lg.connect(g.gain); lfo.start();
+  // filtered noise bed for the zoom whoosh
+  const buf=c.createBuffer(1,c.sampleRate*2,c.sampleRate);
+  const d0=buf.getChannelData(0); for(let i=0;i<d0.length;i++) d0[i]=Math.random()*2-1;
+  const n=c.createBufferSource(); n.buffer=buf; n.loop=true;
+  SND.whooshF=c.createBiquadFilter(); SND.whooshF.type='lowpass'; SND.whooshF.frequency.value=400; SND.whooshF.Q.value=.7;
+  SND.whooshGain=c.createGain(); SND.whooshGain.gain.value=0;
+  n.connect(SND.whooshF); SND.whooshF.connect(SND.whooshGain); SND.whooshGain.connect(SND.master); n.start();
+}
+function sndPoke(){ sndInit(); if(SND.ctx&&SND.ctx.state==='suspended'&&!document.hidden) SND.ctx.resume(); }
+document.addEventListener('visibilitychange',()=>{        // never hum from a background tab
+  if(!SND.ctx) return;
+  if(document.hidden) SND.ctx.suspend(); else if(SND.on) SND.ctx.resume();
+});
+function beep(freq=440,dur=.12,type='sine',vol=.12,slide=0){
+  if(!SND.ctx||!SND.on) return; const c=SND.ctx,t=c.currentTime;
+  const o=c.createOscillator(),gg=c.createGain();
+  o.type=type; o.frequency.setValueAtTime(freq,t);
+  if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,freq+slide),t+dur);
+  gg.gain.setValueAtTime(vol,t); gg.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(gg); gg.connect(SND.master); o.start(t); o.stop(t+dur+.03);
+}
+const sfx={
+  level(k){ beep(200+k*42,.16,'sine',.06); beep(400+k*42,.34,'sine',.025); },
+  select(){ beep(880,.05,'square',.06); beep(1318,.09,'square',.045); },
+  deny(){ beep(140,.32,'sawtooth',.1,-70); },
+  sweep(){
+    if(!SND.ctx||!SND.on) return; const c=SND.ctx,t=c.currentTime;
+    const o=c.createOscillator(),gg=c.createGain(),f=c.createBiquadFilter();
+    o.type='sawtooth'; o.frequency.setValueAtTime(90,t);
+    o.frequency.exponentialRampToValueAtTime(1500,t+4.6);
+    f.type='lowpass'; f.frequency.value=1100;
+    gg.gain.setValueAtTime(.001,t); gg.gain.exponentialRampToValueAtTime(.07,t+.5);
+    gg.gain.setValueAtTime(.07,t+4.1); gg.gain.exponentialRampToValueAtTime(.0001,t+5);
+    o.connect(f); f.connect(gg); gg.connect(SND.master); o.start(t); o.stop(t+5.1);
+  },
+  unlock(){ beep(70,.5,'sine',.22,-25);
+    setTimeout(()=>{ beep(523,.22,'triangle',.09); beep(659,.3,'triangle',.08);
+      beep(784,.5,'triangle',.08); },200); },
+};
+const sndBtn=document.getElementById('snd');
+sndBtn.onclick=()=>{ SND.on=!SND.on; sndBtn.textContent='SND: '+(SND.on?'ON':'OFF');
+  if(SND.on){ sndPoke(); if(SND.master) SND.master.gain.value=.5; }
+  else if(SND.master) SND.master.gain.value=0; };
+
+/* ============================ CAMERA / ZOOM ============================ */
+function camPose(k,t){
+  const L=levels[k], child=levels[k+1];
+  const A=L.camStart, P=L.portal;
+  const Bv= child ? P.clone().addScaledVector(child.camStart,1/BASE)
+                  : P.clone().add(A.clone().sub(P).multiplyScalar(.055));
+  const a=A.clone().sub(P), b=Bv.clone().sub(P);
+  const la=a.length(), lb=Math.max(b.length(),1e-4);
+  const len=la*Math.pow(lb/la,t);
+  const dir=a.normalize().lerp(b.normalize(),ease(t)).normalize();
+  const pos=P.clone().addScaledVector(dir,len);
+  const look=L.center.clone().lerp(P,ease(clamp(t*1.2+.06,0,1)));
+  return {pos,look,len};
+}
+let smoothLook=null, lastK=-1;
+let orbX=0, orbY=0, sOrbX=0, sOrbY=0;          // user look-around offsets (yaw/pitch)
+/* input: wheel */
+addEventListener('wheel',e=>{
+  e.preventDefault(); sndPoke();
+  targetZ=clamp(targetZ+e.deltaY*0.0016,ZMIN,ZMAX);
+  dismissIntro();
+},{passive:false});
+/* input: pointer — drag orbits, pinch zooms */
+const ptrs=new Map(); let pinchD=0;
+const cnv=document.getElementById('c');
+cnv.addEventListener('pointerdown',e=>{ sndPoke();
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY,lx:e.clientX,ly:e.clientY,t:e.pointerType});
+  if(ptrs.size===2){ const p=[...ptrs.values()]; pinchD=Math.hypot(p[0].lx-p[1].lx,p[0].ly-p[1].ly); } });
+cnv.addEventListener('pointermove',e=>{
+  const rec=ptrs.get(e.pointerId); if(!rec) return;
+  const dx=e.clientX-rec.lx, dy=e.clientY-rec.ly;
+  rec.lx=e.clientX; rec.ly=e.clientY;
+  if(ptrs.size===2){
+    const p=[...ptrs.values()]; const d=Math.hypot(p[0].lx-p[1].lx,p[0].ly-p[1].ly);
+    if(pinchD>0){ targetZ=clamp(targetZ+Math.log(d/pinchD)*1.5,ZMIN,ZMAX); dismissIntro(); }
+    pinchD=d;
+  } else if(e.buttons||e.pointerType==='touch'){
+    orbX=clamp(orbX-dx*.0042,-1.25,1.25);
+    orbY=clamp(orbY-dy*.0034,-.8,.8);
+  }
+});
+const endPtr=e=>{
+  // click? raycast wallet cases
+  const rec=ptrs.get(e.pointerId);
+  if(rec && Math.hypot(e.clientX-rec.x,e.clientY-rec.y)<6 && ptrs.size===1){
+    const ray=new THREE.Raycaster();
+    ray.setFromCamera(new THREE.Vector2(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1),camera);
+    const L1=levels[4];
+    if(L1.group.visible){
+      const hit=ray.intersectObjects(L1.hits,false)[0];
+      if(hit!==undefined){ selectWallet(hit.object.userData.wallet); toast('<b>PROGRAM LOADED:</b> '+WALLETS[curW].name,2600); }
+    }
+  }
+  ptrs.delete(e.pointerId); pinchD=0;
+};
+cnv.addEventListener('pointerup',endPtr); cnv.addEventListener('pointercancel',endPtr);
+addEventListener('keydown',e=>{
+  sndPoke();
+  if(e.key==='ArrowDown'||e.key==='PageDown') targetZ=clamp(targetZ+.5,ZMIN,ZMAX);
+  if(e.key==='ArrowUp'||e.key==='PageUp') targetZ=clamp(targetZ-.5,ZMIN,ZMAX);
+  if(e.key==='ArrowLeft') orbX=clamp(orbX+.3,-1.25,1.25);
+  if(e.key==='ArrowRight') orbX=clamp(orbX-.3,-1.25,1.25);
+  if(e.key>='1'&&e.key<='3') selectWallet(+e.key-1);
+  dismissIntro();
+});
+let introGone=false;
+function dismissIntro(){ if(!introGone){ introGone=true; document.getElementById('intro').classList.add('gone'); } }
+setTimeout(dismissIntro,7000);
+/* ============================ MAIN LOOP ============================ */
+const clock=new THREE.Clock();
+const perfNow=()=>clock.elapsedTime;
+function resize(){
+  renderer.setSize(innerWidth,innerHeight);
+  camera.aspect=innerWidth/innerHeight;
+  camera.fov=camera.aspect<.8?66:55;
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize',resize); resize();
+selectWallet(1);
+
+const V0=V();
+let prevZ=Z, prevK=-1;
+function frame(){
+  requestAnimationFrame(frame);
+  const dt=Math.min(clock.getDelta(),.05), time=clock.elapsedTime;
+  Z+=(targetZ-Z)*(1-Math.exp(-dt*3.2));
+  const zv=(Z-prevZ)/Math.max(dt,1e-4); prevZ=Z;
+  if(SND.whooshGain&&SND.on){
+    const tg=Math.min(.2,Math.abs(zv)*.3);
+    SND.whooshGain.gain.value+=(tg-SND.whooshGain.gain.value)*.12;
+    SND.whooshF.frequency.value=260+Math.min(1.2,Math.abs(zv))*1600;
+  }
+  const k=clamp(Math.floor(Z),0,11), t=clamp(Z-k,0,1);
+  if(prevK!==-1&&k!==prevK) sfx.level(k);
+  prevK=k;
+  // reframe cached world-space vectors when current level changes
+  if(lastK!==-1 && k!==lastK && smoothLook){
+    if(k===lastK+1) smoothLook.sub(levels[lastK].portal).multiplyScalar(BASE);
+    else if(k===lastK-1) smoothLook.multiplyScalar(1/BASE).add(levels[k].portal);
+    else smoothLook=null;
+  }
+  lastK=k;
+  // place levels
+  for(const L of levels) L.group.visible=false;
+  const place=(i,s,p)=>{ const L=levels[i]; if(!L) return; L.curScale=s;
+    L.group.visible=true; L.group.scale.setScalar(s); L.group.position.copy(p); };
+  place(k,1,V0);
+  const Pk=levels[k].portal;
+  if(levels[k+1]){
+    place(k+1,1/BASE,Pk);
+    if(levels[k+2]) place(k+2,1/B2,Pk.clone().addScaledVector(levels[k+1].portal,1/BASE));
+  }
+  if(levels[k-1]){
+    place(k-1,BASE,levels[k-1].portal.clone().multiplyScalar(-BASE));
+    if(levels[k-2]) place(k-2,B2,levels[k-2].portal.clone().multiplyScalar(-B2)
+      .addScaledVector(levels[k-1].portal,-BASE));
+  }
+  // fades + assembly + ticks
+  for(let i=Math.max(0,k-2);i<=Math.min(11,k+2);i++){
+    const L=levels[i];
+    const p= i>=4 ? clamp((Z-(i-.78))/.68,0,1) : clamp(((i+.78)-Z)/.68,0,1);
+    const behind=clamp(1-(Z-i-.96)*2.8,0,1);
+    const op=ease(p)*behind;
+    if(op<.012){ L.group.visible=false; continue; }
+    applyAssembly(L,p);
+    setLevelOpacity(L,op);
+    if(L.panelMats.length){                       // bright surfaces vanish as soon as you punch through
+      const pf=clamp(1-(Z-i-.62)*1.9,0,1);
+      for(const m of L.panelMats) m.opacity=m.userData.op0*op*pf;
+    }
+    for(const m of L.pmats) m.size=m.userData.size0*Math.min(L.curScale,3);
+    if(L.tick) L.tick(L,time,dt);
+  }
+  // camera — authored glide + user orbit around the current focus
+  const {pos,look,len}=camPose(k,t);
+  if(!smoothLook) smoothLook=look.clone();
+  smoothLook.lerp(look,1-Math.exp(-dt*5));
+  sOrbX+=(orbX-sOrbX)*(1-Math.exp(-dt*8));
+  sOrbY+=(orbY-sOrbY)*(1-Math.exp(-dt*8));
+  const off=pos.clone().sub(smoothLook);
+  off.applyAxisAngle(camera.up,sOrbX);
+  const raxis=camera.up.clone().cross(off).normalize();
+  if(raxis.lengthSq()>.5) off.applyAxisAngle(raxis,sOrbY);
+  camera.position.copy(smoothLook).add(off);
+  camera.lookAt(smoothLook);
+  const dec=Math.exp(-dt*(.1+Math.abs(zv)*1.2)); orbX*=dec; orbY*=dec;  // re-center as you travel
+  // hud
+  updateHud();
+  const showAtk=Z>8.95&&Z<10.12;
+  if((atkEl.style.display==='block')!==showAtk){ atkEl.style.display=showAtk?'block':'none'; updateAtkHud(); }
+  if(atk.state==='run') updateAtkHud();
+  renderer.render(scene,camera);
+}
+frame();
+window.__c={ get z(){return Z;}, set z(v){ Z=v; targetZ=v; smoothLook=null; },
+  set tz(v){ targetZ=clamp(v,ZMIN,ZMAX); }, selectWallet, attack:()=>atkBtn.onclick(),
+  levels, atk, camera, cam:()=>({p:camera.position.toArray().map(v=>+v.toFixed(2)),
+    l:smoothLook?smoothLook.toArray().map(v=>+v.toFixed(2)):null}),
+  step:(n=1)=>{ for(let i=0;i<n;i++) frame(); } };
+</script>
+</body>
+</html>
