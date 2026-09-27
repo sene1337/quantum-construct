@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Embed demo · The Construct</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:,">
+<style>
+  /* A stand-in for the host section on the music-video site, to test the embed from the same origin. */
+  body { margin: 0; background: #060504; color: #efe8dc; font: 18px/1.6 system-ui, sans-serif; }
+  section { max-width: 78rem; margin: 0 auto; padding: 48px 16px; border-block: 1px solid #2b241d; }
+  .col { max-width: 44rem; margin: 0 auto 28px; }
+  h2 { font: 600 clamp(32px, 4.4vw, 46px)/1.05 Georgia, serif; margin: 6px 0 16px; }
+  .kicker { margin: 0; font: 600 13px/1 system-ui, sans-serif; letter-spacing: 0.2em; text-transform: uppercase; color: #e3b45c; }
+  .filler { height: 110vh; display: grid; place-items: center; color: #a79e90; }
+</style>
+</head>
+<body>
+<div class="filler">Scroll down to the section.</div>
+<section>
+  <div class="col">
+    <p class="kicker">Can't Print the Proof</p>
+    <h2>But what about quantum?</h2>
+    <p>The frame below is the embed. Scrolling over it scrolls this page until you choose to enter.</p>
+  </div>
+  <!-- The snippet to paste: -->
+  <iframe src="../?embed=1" title="The Construct: Bitcoin vs. the quantum machine" loading="lazy" allow="fullscreen" style="display:block;width:100%;aspect-ratio:16/9;min-height:560px;max-height:85vh;border:0;border-radius:14px;background:#060504"></iframe>
+</section>
+<div class="filler">The page goes on.</div>
+</body>
+</html>
