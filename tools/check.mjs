@@ -36,7 +36,7 @@ const BASE = `http://127.0.0.1:${server.address().port}`;
 // ---------------------------------------------------------------- Chrome over the DevTools protocol
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'construct-chrome-'));
 const chrome = spawn(CHROME, ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check',
-  '--ignore-gpu-blocklist', '--enable-gpu', '--use-angle=metal', '--autoplay-policy=user-gesture-required', '--hide-scrollbars', 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
+  '--ignore-gpu-blocklist', '--enable-gpu', '--use-angle=metal', '--autoplay-policy=user-gesture-required', '--mute-audio', '--hide-scrollbars', 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
 const wsUrl = await new Promise((res, rej) => {
   let buf = '';
   chrome.stderr.on('data', (d) => { buf += d; const m = buf.match(/DevTools listening on (ws:\/\/\S+)/); if (m) res(m[1]); });
