@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { V, rand } from './engine.js';
 import { label, drawnPanel, faceToward, fonts } from './labels.js';
-import { castText, standOnWater } from './cast.js';
+import { castText, standOnWater, textBounds } from './cast.js';
 import { HEX } from './world.js';
 import { LEVEL_TEXT, TARGETS, CHAIN, MACHINES, NUM } from './facts.js';
 
@@ -50,9 +50,9 @@ function say(L, text, pos, opts = {}) {
 }
 /** Cast a number or words in metal and stand them on the level's water, rising as the level arrives. An array
  *  of lines is stacked, the last line on the water. */
-function monument(L, kit, text, x, z, size, { rotY, face = true } = {}) {
+function monument(L, kit, text, x, z, size, { rotY, face = true, metal = {} } = {}) {
   const lines = Array.isArray(text) ? text : [text];
-  const mat = kit.cast(), mm = kit.castMirror();
+  const mat = kit.cast(metal), mm = kit.castMirror(metal);
   const casts = lines.map((t) => castText(t, { size, depth: 0.2, bevel: 0.024, material: mat, mirrorMaterial: mm }));
   let c = casts[0];
   if (casts.length > 1) {
@@ -207,16 +207,36 @@ export function defineLevels(engine, app) {
   const def = (d) => engine.defLevel({ ...d, ...LEVEL_TEXT[d.id] });
 
   /* ---------------- O4 · the dawn: the closing image ---------------- */
+  // The words stand head on to a low camera, like the Sovereignty simulator's year. The view is turned so the sun
+  // rises off to the left, in the open sky beside the words: it lights their rims and the water instead of shining
+  // through the letters, and the key light falls on their faces from behind the viewer. Wide frames get two lines,
+  // tall frames three, and the camera stands back just far enough for them to fit.
+  const DAWN = { a: -0.43, size: 2.3, metal: { roughness: 0.36, clearcoat: 0.2 }, wide: ['CAN’T PRINT', 'THE PROOF'], tall: ['CAN’T', 'PRINT', 'THE PROOF'] };
+  const stackBounds = (lines) => {
+    const bs = lines.map((t) => textBounds(t, DAWN.size));
+    return { width: Math.max(...bs.map((b) => b.width)), height: bs.reduce((sum, b) => sum + b.height, 0) + DAWN.size * 0.16 * (lines.length - 1) };
+  };
   def({
-    id: 'dawn', short: 'O4', side: 'out', sky: 1.02,
-    camStart: [0, 5.4, 31], center: [-1.5, 3.1, -4], portal: [21, 0, -30], water: 200,
+    id: 'dawn', short: 'O4', side: 'out', sky: 0.96, look: { fov: 0.62, bloom: 0.3, threshold: 1.9, embers: 0.3, key: 0.85, rim: 0.55 },
+    // The machine in question (O3) waits out of frame to the right; zooming in turns toward it.
+    camStart: [-10, 2.5, 20], center: [0, 1.7, 0], portal: [49.6, 0, -16], water: 220,
     build(L, kit) {
-      const g = L.group;
-      // The closing image: the words in cast gold, standing on the water with the sun coming up behind them.
-      monument(L, kit, ['CAN’T PRINT', 'THE PROOF'], -2.8, -6, 2.3, { rotY: 0.05 });
-      // The machine in question, far off on the water: the proof attacker (O3), a spark by the horizon.
-      const star = glow(2.6, C.orange); star.position.set(21, 0.8, -30); g.add(star);
-      say(L, 'the machine in question ▾', [21, 3.0, -30], { size: 0.9, color: HEX.muted, billboard: true });
+      L.wide = monument(L, kit, DAWN.wide, 0, 0, DAWN.size, { rotY: DAWN.a, metal: DAWN.metal });
+      L.tall = monument(L, kit, DAWN.tall, 0, 0, DAWN.size, { rotY: DAWN.a, metal: DAWN.metal });
+      L.tall.visible = false;
+      if (L.lastFrame) L.frame(L, ...L.lastFrame);
+    },
+    frame(L, aspect, fov) {
+      L.lastFrame = [aspect, fov];
+      const tall = aspect < 0.9;
+      if (L.wide) { L.wide.visible = !tall; L.tall.visible = tall; }
+      const b = stackBounds(tall ? DAWN.tall : DAWN.wide);
+      const tanV = Math.tan((fov * Math.PI) / 360), tanH = tanV * aspect;
+      const kw = tall ? 1.16 : Math.min(1.8, 1.25 + Math.max(0, aspect - 1) * 0.9);
+      const d = Math.max((b.width * kw) / 2 / tanH, (b.height * 3.2) / 2 / tanV);
+      const ty = 0.46 * b.height;
+      L.camStart.set(Math.sin(DAWN.a) * d, ty + 0.035 * d, Math.cos(DAWN.a) * d);
+      L.center.set(0, ty, 0);
     },
   });
 
@@ -554,12 +574,12 @@ export function defineLevels(engine, app) {
       for (let i = 0; i < 700; i++) { const x = -1.9 + rand() * 5.8, p = cPt(x, 1); cp.push(p.x + (rand() - 0.5) * 0.1, p.y + (rand() - 0.5) * 0.1, (rand() - 0.5) * 0.5); }
       const pgeo = new THREE.BufferGeometry(); pgeo.setAttribute('position', new THREE.Float32BufferAttribute(cp, 3));
       g.add(new THREE.Points(pgeo, new THREE.PointsMaterial({ color: new THREE.Color().setRGB(1.2, 0.8, 0.35), size: 0.07, map: glowTex(), transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending })));
-      monument(L, kit, 'y² = x³ + 7', -2.5, -14, 2.1);
-      say(L, NUM.curve.note, [7.2, 1.0, 2.2], { size: 0.26, color: HEX.muted, maxW: 8 });
+      monument(L, kit, 'y² = x³ + 7', 9.5, -16, 1.7);
+      say(L, NUM.curve.note, [0.8, 2.25, 1.0], { size: 0.24, color: HEX.muted, maxW: 4.2 });
       // G, the generator.
       const gm = new THREE.Group();
       gm.add(glow(1.2, C.goldHot), line([[-0.35, 0, 0], [0.35, 0, 0]], C.goldHot, 1), line([[0, -0.35, 0], [0, 0.35, 0]], C.goldHot, 1));
-      const glb = label('G, the generator\n{m:everyone starts here}', { size: 0.24, align: 'right' }); glb.position.set(-0.5, 0.75, 0); gm.add(glb);
+      const glb = label('G, the generator\n{m:everyone starts here}', { size: 0.24 }); glb.position.set(0, 0.95, 0); gm.add(glb);
       gm.position.copy(GEN); g.add(gm);
       // P: the public key. Exposed, a red target; hidden, a hash wall.
       L.exposedG = new THREE.Group();

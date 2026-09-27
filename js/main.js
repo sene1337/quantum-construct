@@ -57,7 +57,7 @@ async function boot() {
 
   const hud = createHud({
     levels, targets: TARGETS,
-    onLevel: (i) => { attack.cancel(); dismissIntro(); app.flyTo(i + (levels[i].side === 'out' ? 0.06 : 0.15), still); },
+    onLevel: (i) => { attack.cancel(); dismissIntro(); app.flyTo(i === 0 ? ZMIN : i + (levels[i].side === 'out' ? 0.06 : 0.15), still); },
     onTarget: (i) => selectTarget(i, true),
     onRun: () => { dismissIntro(); if (EMBED && !captured) enter(); sound.poke(); attack.run(); },
     onZoomStep: (d) => { dismissIntro(); attack.cancel(); app.flyTo(targetZ + d * 0.5, false); sound.poke(); },
@@ -138,21 +138,31 @@ async function boot() {
     },
   });
 
-  // Size: the frame or the window. Portrait screens get a wider lens.
+  // Size: the frame or the window. Portrait screens get a wider lens. Levels that frame themselves (the closing
+  // image) place their camera for the frame's shape.
+  const baseFov = (a) => (a < 1 ? 50 + (1 - a) * 30 : 50);
   function resize(force) {
     const w = canvas.clientWidth || innerWidth, h = canvas.clientHeight || innerHeight;
     const aspect = w / h;
-    world.camera.fov = aspect < 1 ? 50 + (1 - aspect) * 30 : 50;
+    world.camera.fov = baseFov(aspect);
     world.resize(w, h, dpr);
+    for (const L of levels) if (L.frame) L.frame(L, aspect, baseFov(aspect) * ((L.look && L.look.fov) || 1));
     if (force) render(0);
   }
   window.addEventListener('resize', () => resize(!running));
 
-  // The sky follows the zoom: night at the private key, sunrise at the outermost level.
-  const skyAt = (z) => {
+  // Along the zoom, each level's settings blend into the next: the sky (night at the private key, sunrise at the
+  // outermost level), the lens, the bloom, the embers and the key light.
+  const blendAt = (z, get, dflt) => {
     const k = clamp(Math.floor(z), 0, levels.length - 1), f = clamp(z - k, 0, 1);
-    const a = levels[k].sky, b = levels[Math.min(k + 1, levels.length - 1)].sky;
+    const a = get(levels[k]) ?? dflt, b = get(levels[Math.min(k + 1, levels.length - 1)]) ?? dflt;
     return a + (b - a) * f;
+  };
+  const skyAt = (z) => blendAt(z, (L) => L.sky, 0.5);
+  const look = {};
+  const lookAt = (z) => {
+    for (const [key, dflt] of [['fov', 1], ['bloom', 1], ['threshold', 0.92], ['embers', 1], ['key', 1], ['rim', 1]]) look[key] = blendAt(z, (L) => L.look && L.look[key], dflt);
+    return look;
   };
 
   // The loop. It runs only while the canvas is on screen and the tab is visible.
@@ -167,6 +177,9 @@ async function boot() {
     sound.zoom(zv);
     attack.update(time, dt);
     if (!captured && !still && EMBED) engine.orb.x = Math.sin(time * 0.07) * 0.25;
+    const lk = lookAt(Z);
+    world.camera.fov = baseFov(world.camera.aspect) * lk.fov;
+    world.setLook(lk);
     const { k } = engine.update(Z, time, dt, zv);
     if (prevK !== -1 && k !== prevK) sound.level(k);
     prevK = k;

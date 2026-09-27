@@ -3,10 +3,10 @@
 // (the private key); the integer part is the level you are in, the fraction how far you have flown toward its
 // portal. (Kept from the first version of the construct, which this refresh builds on.)
 import * as THREE from 'three';
-import { makeFx, materialKit } from './world.js';
+import { makeFx, materialKit, smooth } from './world.js';
 
 export const BASE = 16, B2 = BASE * BASE;
-export const ZMIN = 0.02, ZMAX = 11.72;
+export const ZMIN = 0, ZMAX = 11.72;
 export const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const ease = (t) => t * t * (3 - 2 * t);
@@ -116,7 +116,6 @@ export function createEngine(world, { still }) {
     if (Math.abs(op - L.lastOp) < 0.003 && Math.abs(metalOp - L.fx.reveal.value) < 0.003) return;
     L.lastOp = op;
     L.fx.reveal.value = metalOp >= 0.999 ? 1 : metalOp;
-    L.opU.value = op;
     for (const m of L.fadeMats) m.opacity = m.userData.op0 * op;
     const r = ease(clamp(metalOp * 1.25 - 0.15, 0, 1));
     for (const c of L.casts) c.userData.setRise(still ? 1 : r);
@@ -156,6 +155,18 @@ export function createEngine(world, { still }) {
     fx.clipDown.constant = p.y;
   }
 
+  // One sheet of water at a time. A level that stands on its parent's water shares that plane, so the two sheets
+  // cross-fade just after you pass between them instead of stacking; a level whose portal floats shows its water
+  // only as you arrive; the level you have just left lets its water go.
+  const onParentWater = (c) => c > 0 && !!levels[c].water && !!levels[c - 1].water && levels[c - 1].portal.y === 0;
+  function waterWeight(i, k, Z) {
+    const fade = smooth(k, k + 0.12, Z);
+    if (i === k) return onParentWater(k) ? fade : 1;
+    if (i === k - 1) return 1 - fade;
+    if (i === k + 1) return onParentWater(i) ? 0 : smooth(i - 0.3, i - 0.02, Z);
+    return 0;
+  }
+
   /** Lay out the levels around Z, fade them, point the camera. Returns the current level index and fraction. */
   function update(Z, t, dt, zv) {
     const k = clamp(Math.floor(Z), 0, levels.length - 1), f = clamp(Z - k, 0, 1);
@@ -187,6 +198,7 @@ export function createEngine(world, { still }) {
       const labelOp = parent ? op * clamp(1 - (Z - i - 1) / 0.1, 0, 1) : op;
       const metalOp = parent ? op * clamp(1 - (Z - i - 1) / 0.15, 0, 1) : op;
       setOpacity(L, parent ? labelOp : op, labelOp, metalOp);
+      if (L.waterMesh) L.opU.value = (parent ? labelOp : op) * waterWeight(i, k, Z);
       for (const m of L.pointMats) m.size = m.userData.size0 * Math.min(L.curScale, 3);
       if (L.tick) L.tick(L, t, dt, op);
     }

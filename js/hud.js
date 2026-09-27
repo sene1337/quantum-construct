@@ -75,8 +75,9 @@ export function createHud({ levels, targets, onLevel, onTarget, onRun, onZoomSte
   // The timeline shows with the outermost level.
   $('timelineList').innerHTML = TIMELINE.items.map((t) => `<li><b>${t.year}</b><span>${refs(t.text)}</span></li>`).join('');
   $('timelineOdds').innerHTML = refs(TIMELINE.odds);
-  // Open on wide screens; on phones it starts closed, so the closing image stays in view.
-  $('timeline').open = !(window.matchMedia && matchMedia('(max-width: 720px)').matches);
+  // Open where it fits in the bottom row of a full page; embedded or on smaller screens it starts closed, so the
+  // closing image stays in view.
+  $('timeline').open = !document.documentElement.classList.contains('embed') && !!(window.matchMedia && matchMedia('(min-width: 1241px) and (min-height: 800px)').matches);
 
   let curLevel = -1;
   function setLevel(i) {

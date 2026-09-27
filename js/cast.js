@@ -69,6 +69,19 @@ export function castText(text, { size = 1, depth = 0.2, bevel = 0.022, material,
   return out;
 }
 
+/** Width and height of cast text in world units, from the glyph data alone (no geometry is built). */
+export function textBounds(text, size = 1) {
+  let x = 0, minY = Infinity, maxY = -Infinity;
+  for (const ch of text) {
+    const g = GL && GL.glyphs[ch];
+    x += g ? g.advance / 1000 : 0.5;
+    if (!g) continue;
+    for (const c of g.cmds) for (let i = 2; i < c.length; i += 2) { minY = Math.min(minY, c[i]); maxY = Math.max(maxY, c[i]); }
+  }
+  if (!isFinite(minY)) { minY = 0; maxY = 700; }
+  return { width: x * size, height: ((maxY - minY) / 1000) * size };
+}
+
 /** Stand cast text on the water of a level (y = 0 there), with its reflection, rising as `rise` goes 0 to 1. */
 export function standOnWater(cast, parent, x, z, rotY = 0) {
   const holder = new THREE.Group();

@@ -223,7 +223,8 @@ export function createWorld(canvas, { dpr, msaa, still }) {
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
 
-  let W = 1, H = 1, curDpr = dpr, skyK = -1, envI = -1, flow = 0;
+  let W = 1, H = 1, curDpr = dpr, skyK = -1, envI = -1, flow = 0, baseKey = 2, keyMul = 1, baseRim = 2, rimMul = 1;
+  const BLOOM = { strength: 0.42, threshold: 0.92 };
   // The sun on the water: its direction in view space and its strength, shared with every level's water.
   const sun = { viewDir: { value: new THREE.Vector3(0, 0, -1) }, strength: { value: 1 }, color: { value: new THREE.Vector3(1, 0.62, 0.3) } };
   const world = {
@@ -236,11 +237,23 @@ export function createWorld(canvas, { dpr, msaa, still }) {
       rim.position.copy(sunDir).multiplyScalar(10);
       sun.strength.value = smooth(0.3, 1.0, k);
       sun.color.value.set(...skyMat.uniforms.uSunCol.value.toArray());
-      rim.intensity = 1.2 + 1.6 * smooth(0.2, 1.0, k);
-      key.intensity = 1.5 + 1.2 * k;
+      baseRim = 1.2 + 1.6 * smooth(0.2, 1.0, k);
+      rim.intensity = baseRim * rimMul;
+      baseKey = 1.5 + 1.2 * k;
+      key.intensity = baseKey * keyMul;
       let best = 0;
       envKs.forEach((e, i) => { if (Math.abs(e - k) < Math.abs(envKs[best] - k)) best = i; });
       if (best !== envI) { envI = best; scene.environment = envs[best]; }
+    },
+    /** Per-level look, blended along the zoom: bloom strength and threshold, how many embers, how bright the key. */
+    setLook({ bloom: b = 1, threshold = BLOOM.threshold, embers: e = 1, key: kk = 1, rim: rr = 1 }) {
+      bloom.strength = BLOOM.strength * b;
+      bloom.threshold = threshold;
+      emberMat.uniforms.uAmt.value = e;
+      keyMul = kk;
+      key.intensity = baseKey * keyMul;
+      rimMul = rr;
+      rim.intensity = baseRim * rimMul;
     },
     resize(w, h, d = curDpr) {
       if (!(w > 0 && h > 0)) return;

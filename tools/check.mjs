@@ -111,7 +111,7 @@ async function fullPage(name, w, h, opts) {
   await pg.ev(`document.getElementById('introGo')?.click()`);
   await sleep(900);
   // Zoomed in: the curve, the trapdoor, the key. Zoomed out: the machines and the dawn.
-  for (const [z, tag] of [[4.05, 'L1-person'], [6.2, 'L3-timechain'], [7.25, 'L4-utxo'], [9.35, 'L6-curve'], [11.55, 'L8-key'], [3.06, 'O1-today'], [2.06, 'O2-machineA'], [1.06, 'O3-machineB'], [0.03, 'O4-dawn']]) {
+  for (const [z, tag] of [[4.05, 'L1-person'], [6.2, 'L3-timechain'], [7.25, 'L4-utxo'], [9.35, 'L6-curve'], [11.55, 'L8-key'], [3.06, 'O1-today'], [2.06, 'O2-machineA'], [1.06, 'O3-machineB'], [0, 'O4-dawn']]) {
     await pg.ev(`window.__construct.z = ${z}`);
     await sleep(1600);
     r.shots.push(await pg.shot(`${name}-${tag}`));
